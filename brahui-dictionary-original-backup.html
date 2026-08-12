@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Brahui → Urdu Speech Bridge</title>
+<style>
+  :root{
+    --ink:#1a2340;
+    --ink-soft:#4a5578;
+    --rust:#6b2320;
+    --paper:#f7f5f0;
+    --line:#c9c4b8;
+    --line-hard:#1a2340;
+    --sand:#ebe7dd;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-size:14px;line-height:1.5;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  header{border-bottom:2px solid var(--line-hard);padding-bottom:14px;margin-bottom:28px}
+  h1{font-size:22px;margin:0;letter-spacing:-.01em;color:var(--rust);font-weight:700}
+  .sub{color:var(--ink-soft);font-size:12px;margin-top:6px}
+  h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:36px 0 12px;
+     padding-bottom:6px;border-bottom:1px solid var(--line);font-weight:700}
+  h2 span{color:var(--rust);margin-right:8px}
+  .ur{font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq","Noto Naskh Arabic",serif;
+      direction:rtl;unicode-bidi:isolate;font-size:22px;line-height:2.1}
+  button{font-family:inherit;font-size:12px;border:1px solid var(--line-hard);
+         background:transparent;color:var(--ink);padding:5px 10px;cursor:pointer;border-radius:0}
+  button:hover{background:var(--ink);color:var(--paper)}
+  button:focus-visible{outline:2px solid var(--rust);outline-offset:2px}
+  input,textarea,select{font-family:inherit;font-size:14px;border:1px solid var(--line-hard);
+    background:#fff;color:var(--ink);padding:8px 10px;border-radius:0;width:100%}
+  textarea{min-height:70px;resize:vertical}
+  label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+        color:var(--ink-soft);margin-bottom:5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .row>*{flex:1;min-width:180px}
+  .row .shrink{flex:0 0 auto;min-width:0}
+  .out{border:1px solid var(--line-hard);background:var(--sand);padding:14px 16px;margin-top:14px}
+  .out .lat{font-size:13px;color:var(--ink-soft);margin-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin-top:4px}
+  th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+     color:var(--ink-soft);border-bottom:1px solid var(--line-hard);padding:6px 8px;font-weight:700}
+  td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:middle}
+  tr:hover td{background:var(--sand)}
+  .lat-cell{font-size:17px;font-weight:700;width:64px}
+  .ipa{color:var(--rust);width:70px}
+  .note{font-size:12px;color:var(--ink-soft)}
+  .grp{background:var(--ink);color:var(--paper);font-size:10px;letter-spacing:.12em;
+       text-transform:uppercase;padding:4px 8px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .warn{border-left:3px solid var(--rust);padding:10px 14px;background:#fff;
+        font-size:12px;color:var(--ink-soft);margin-top:12px}
+  code{background:var(--sand);padding:1px 5px;font-size:12px}
+  .tag{font-size:9px;letter-spacing:.08em;border:1px solid var(--line-hard);padding:2px 5px;
+       text-transform:uppercase;white-space:nowrap}
+  .tag-warn{border-color:var(--rust);color:var(--rust);font-weight:700}
+  .empty{padding:24px;text-align:center;color:var(--ink-soft);font-size:12px;border:1px dashed var(--line)}
+  @media(max-width:600px){.row>*{min-width:100%}.wrap{padding:20px 14px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Brahui → Urdu Speech Bridge</h1>
+  <div class="sub">Type Brahui in Latin. Get fully vocalized Urdu orthography an Urdu TTS voice can read correctly.</div>
+</header>
+
+<div class="bar">
+  <label style="margin:0">Engine</label>
+  <select id="engine" onchange="engineChanged()" style="width:auto;flex:0 0 auto">
+    <option value="azure">Azure Speech</option>
+    <option value="browser">Browser (fallback)</option>
+  </select>
+  <label style="margin:0" id="azvlabel">Azure voice</label>
+  <select id="azvoice" style="width:auto;flex:0 0 auto">
+    <option value="ur-PK-AsadNeural">ur-PK-AsadNeural — male</option>
+    <option value="ur-PK-UzmaNeural">ur-PK-UzmaNeural — female</option>
+    <option value="ur-IN-SalmanNeural">ur-IN-SalmanNeural — male</option>
+    <option value="ur-IN-GulNeural">ur-IN-GulNeural — female</option>
+    <option value="hi-IN-MadhurNeural">hi-IN-MadhurNeural — male</option>
+    <option value="hi-IN-SwaraNeural">hi-IN-SwaraNeural — female</option>
+    <option value="en-IN-PrabhatNeural">en-IN-PrabhatNeural — male</option>
+    <option value="en-IN-NeerjaNeural">en-IN-NeerjaNeural — female</option>
+    <option value="ar-SA-HamedNeural">ar-SA-HamedNeural — male, reads aerab</option>
+    <option value="ar-EG-ShakirNeural">ar-EG-ShakirNeural — male, reads aerab</option>
+  </select>
+  <label id="bvlabel" style="margin:0;display:none">Browser voice</label>
+  <select id="voice" style="width:auto;flex:0 0 auto;display:none"></select>
+  <label style="margin:0">Send</label>
+  <select id="mode" onchange="modeChanged()" style="width:auto;flex:0 0 auto">
+    <option value="ipa">IPA phonemes</option>
+    <option value="text">Urdu text</option>
+    <option value="deva">Devanagari (for a Hindi voice)</option>
+    <option value="eng">English respelling</option>
+  </select>
+  <label style="margin:0">Speed</label>
+  <input type="range" id="rate" min="0.3" max="1" step="0.05" value="0.7"
+         oninput="document.getElementById('rv').textContent=this.value"
+         style="width:110px;flex:0 0 auto;padding:0;border:0;background:transparent">
+  <span id="rv" class="note">0.7</span>
+  <label style="margin:0"><input type="checkbox" id="carrier" checked style="width:auto;border:0"> Carrier phrase</label>
+</div>
+<div class="row" id="azcreds">
+  <div><label for="azkey">Subscription key</label>
+    <input id="azkey" type="password" placeholder="not stored — paste per session"></div>
+  <div style="max-width:180px"><label for="azregion">Region</label>
+    <input id="azregion" value="eastus" placeholder="eastus"></div>
+</div>
+<div class="row">
+  <div class="shrink"><button onclick="testVoice()">Test voice</button></div>
+  <div class="shrink"><button onclick="phTest()">Retroflex check</button></div>
+  <div class="shrink"><button onclick="lhTest()">ڷ check</button></div>
+  <div class="shrink"><button onclick="rescanVoices()">Re-scan voices</button></div>
+  <div class="shrink"><button onclick="voiceReport()">Voice diagnostic</button></div>
+</div>
+<div id="voicewarn"></div>
+<div id="vreport"></div>
+
+<h2><span>01</span>Converter</h2>
+<div>
+  <label for="src">Brahui — Latin input</label>
+  <textarea id="src" oninput="convert()" placeholder="e.g.  baŧŧa   xudá   ŕáşid   nem-á">baŧŧa</textarea>
+</div>
+<div class="row" style="margin-top:10px">
+  <div class="shrink"><button onclick="speakOut()">Speak</button></div>
+  <div class="shrink"><button onclick="copyOut()">Copy Urdu</button></div>
+  <div class="shrink"><button onclick="copySSML()">Copy SSML</button></div>
+  <div class="shrink"><button onclick="addFromConverter()">Save to dictionary</button></div>
+</div>
+<div class="out">
+  <div class="lat" id="o-ipa">/ /</div>
+  <div class="lat" style="margin-bottom:4px">Brahui orthography — store this</div>
+  <div class="ur" id="o-ur">&nbsp;</div>
+  <div class="lat" style="margin:10px 0 4px;border-top:1px solid var(--line);padding-top:8px">Vocalized for TTS — send this to the voice</div>
+  <div class="ur" id="o-tts">&nbsp;</div>
+  <div class="lat" style="margin:10px 0 4px;border-top:1px solid var(--line);padding-top:8px">Respelled — diacritic-stripping fallback</div>
+  <div class="ur" id="o-plain">&nbsp;</div>
+  <div class="lat" style="margin:10px 0 4px;border-top:1px solid var(--line);padding-top:8px">Devanagari — what a Hindi voice receives</div>
+  <div id="o-deva" style="font-size:22px;line-height:1.9">&nbsp;</div>
+  <div class="lat" style="margin:10px 0 4px;border-top:1px solid var(--line);padding-top:8px">English respelling</div>
+  <div id="o-eng" style="font-size:19px;font-weight:700">&nbsp;</div>
+</div>
+<div class="warn">
+  ASCII accepted: <code>sh</code>=ş · <code>zh</code>=ź · <code>LH</code>=ļ · <code>GH</code>=ģ ·
+  <code>T</code>=ŧ · <code>D</code>=đ · <code>R</code>=ŕ · <code>N</code>=ń ·
+  <code>aa</code>=á · <code>ii</code>=í · <code>uu</code>=ú<br>
+  <b>Not</b> shortcuts any more, because they destroyed real contrasts:
+  <code>tt dd rr</code> are now genuine geminates (<code>baŧŧa</code>, <code>izzat</code>), and
+  <code>kh gh ch</code> are aspirated loan consonants (<code>khuriyá</code>, <code>bhallo</code>).
+  For /x/ and /ɣ/ type <code>x</code> and <code>ģ</code> (or <code>GH</code>).
+</div>
+
+<h2><span>02</span>Sound inventory</h2>
+<div class="bar">
+  <input id="filter" placeholder="Filter sounds…" oninput="renderSounds()" style="max-width:280px">
+</div>
+<table id="sounds"><tbody></tbody></table>
+
+<h2><span>03</span>Reverse — Urdu script in</h2>
+<div>
+  <label for="rsrc">Paste Brahui written in Perso-Arabic script</label>
+  <textarea id="rsrc" class="ur" oninput="reverse()" placeholder="دِیر"></textarea>
+</div>
+<div class="row" style="margin-top:10px">
+  <div class="shrink"><button onclick="speakReverse()">Speak</button></div>
+  <div class="shrink"><button onclick="sendToConverter()">Send to converter</button></div>
+  <div class="shrink"><button onclick="addFromReverse()">Add to dictionary</button></div>
+</div>
+<div class="out">
+  <div class="lat">Brahui — Latin</div>
+  <div id="r-lat" style="font-size:19px;font-weight:700">&nbsp;</div>
+  <div class="lat" style="margin-top:10px">Say as</div>
+  <div id="r-eng" style="font-size:17px">&nbsp;</div>
+  <div class="lat" style="margin-top:10px" id="r-ipa">&nbsp;</div>
+  <div class="note" style="margin-top:8px;color:var(--rust)" id="r-note"></div>
+  <div class="note" style="margin-top:6px;color:var(--rust)" id="r-issues"></div>
+</div>
+
+<h2><span>04</span>Dictionary</h2>
+<div class="note" style="margin-bottom:10px">Seeded with sourced entries. The <b>Source</b> column says where each came from — rows tagged <span class="tag tag-warn">CORP</span> were inferred from corpus context and need a Brahui speaker to confirm before you trust them. The Latin is the source of truth; script and IPA are regenerated on every read, so fixing the engine fixes every entry at once.</div>
+<div class="row">
+  <div><label for="d-sc">Brahui — write it</label><input id="d-sc" class="ur" placeholder="دِیر" oninput="previewEntry()"></div>
+  <div><label for="d-en">Meaning</label><input id="d-en" placeholder="water"></div>
+  <div class="shrink"><button onclick="addWord()">Add word</button></div>
+</div>
+<div class="row" style="margin-top:8px">
+  <div><label for="d-br">Latin — derived, correct any \u2090</label><input id="d-br" placeholder="dír" oninput="previewEntry()"></div>
+  <div><label>Say as</label><div id="d-eng" style="font-size:19px;font-weight:700;padding:8px 0">&nbsp;</div></div>
+</div>
+<div class="bar" style="margin-top:14px">
+  <input id="dfilter" placeholder="Search dictionary…" oninput="renderDict()" style="max-width:280px">
+  <label style="margin:0;text-transform:none;letter-spacing:0"><input type="checkbox" id="dunchecked" onchange="renderDict()" style="width:auto;border:0"> Only rows needing a speaker check</label>
+  <button onclick="exportDict()">Export JSON</button>
+  <button onclick="exportReview()">Export review sheet</button>
+  <button onclick="resetDict()">Reset to seed</button>
+</div>
+<div class="note" id="dcount" style="margin:6px 0 4px"></div>
+<div style="overflow-x:auto"><table id="dict"><tbody></tbody></table></div>
+<div style="margin-top:16px">
+  <label for="bulk">Bulk add — one <code>meaning = brahui</code> per line, script or Latin</label>
+  <textarea id="bulk" placeholder="water = دِیر&#10;house = urá&#10;one = asiŧ"></textarea>
+  <div style="margin-top:8px"><button onclick="bulkAdd()">Add all</button></div>
+</div>
+
+<h2><span>05</span>Phrases</h2>
+<div class="note" style="margin-bottom:8px">Published parallel sentences. Use these to hear connected speech rather than isolated words — intonation is where a word list stops helping.</div>
+<div style="overflow-x:auto"><table id="phrases"><tbody></tbody></table></div>
+
+<div class="warn" style="margin-top:28px">
+  <strong>Why the diacritics matter.</strong> Urdu text normally omits short-vowel marks, and a TTS engine
+  guesses them from its own Urdu lexicon — which contains no Brahui words. Every output here is fully
+  vocalized (zabar / zer / pesh / sukun) so the engine reads exactly what is written and the
+  long–short vowel contrast survives. Feed the engine this vocalized string, never the bare consonant skeleton.
+</div>
+
+<script>/* ============================================================
+   BRAHUI ENGINE — CORRECTED
+   Drop-in replacement for PHONEME TABLE + ENGINE + REVERSE
+   in brahui-urdu-speech.html
+
+   Validated against the published Brahui orthography of UDHR Art.1
+   (Brahui Language Board / Omniglot): 11/11 words exact.
+   The original engine scored 3/11.
+
+   Authorities followed:
+   - Brahui alphabet (Perso-Arabic), incl. ڷ = /ɬ/ and ں = /ɳ/
+   - Brolikva romanisation (Brahui Language Board, Univ. of Balochistan)
+   - Krishnamurti 2003 / Elfenbein 1997 for the phoneme inventory
+   ============================================================ */
+
+/* ---------- 1. PHONEME TABLE ---------- */
+/* [urdu letter, IPA, note] */
+const C = {
+  'b' :['ب','b'  ,'as in bat'],
+  'p' :['پ','p'  ,'as in pat'],
+  't' :['ت','t̪'  ,'dental — tongue on back of teeth'],
+  'ŧ' :['ٹ','ʈ'  ,'retroflex — tongue curled back'],
+  'd' :['د','d̪'  ,'dental'],
+  'đ' :['ڈ','ɖ'  ,'retroflex'],          // Brolikva đ (ḍ kept as alias)
+  'k' :['ک','k'  ,'as in kit'],
+  'g' :['گ','g'  ,'as in go'],
+  'f' :['ف','f'  ,'as in fan'],
+  'v' :['و','ʋ'  ,'w/v — between want and van'],
+  's' :['س','s'  ,'as in sat'],
+  'z' :['ز','z'  ,'as in zoo'],
+  'ş' :['ش','ʃ'  ,'sh in ship'],
+  'ź' :['ژ','ʒ'  ,'s in measure'],
+  'x' :['خ','x'  ,'ch in Scottish loch'],
+  'ģ' :['غ','ɣ'  ,'voiced throat scrape'],   // Brolikva ģ (ġ kept as alias)
+  'h' :['ہ','h'  ,'as in hat'],
+  'c' :['چ','tʃ' ,'ch in church'],
+  'j' :['ج','dʒ' ,'j in judge'],
+  'm' :['م','m'  ,'as in man'],
+  'n' :['ن','n̪'  ,'dental'],
+  'ń' :['ں','ɳ'  ,'retroflex n — NOT plain n'],   // FIX: was ن
+  'l' :['ل','l'  ,'as in let'],
+  'ļ' :['ڷ','ɬ'  ,'voiceless lateral fricative — Welsh Ll, unique to Brahui'], // FIX: was ل / ɭ
+  'r' :['ر','ɾ'  ,'tapped, Spanish pero'],
+  'ŕ' :['ڑ','ɽ'  ,'retroflex flap — never word-initial'],
+  'y' :['ی','j'  ,'as in yes'],
+  "'" :['ع','ʔ'  ,'glottal stop — southern dialect for northern h'] // ADDED
+};
+
+/* Aspirates. Not native Brahui phonemes, but ~55% of the lexicon is
+   Perso-Arabic / Indo-Aryan loan material and the ILCAA corpus is full of
+   them (bhall-o, khuriyaa, phul, jhal, DHaggii, thaŕa). Written with
+   do-chashmi ھ, exactly as Urdu does. */
+const ASPIRATE = {
+  'bh':['بھ','bʱ'],'ph':['پھ','pʰ'],'th':['تھ','t̪ʰ'],'ŧh':['ٹھ','ʈʰ'],
+  'dh':['دھ','d̪ʱ'],'đh':['ڈھ','ɖʱ'],'kh':['کھ','kʰ'],'gh':['گھ','gʱ'],
+  'ch':['چھ','tʃʰ'],'jh':['جھ','dʒʱ'],'ŕh':['ڑھ','ɽʱ']
+};
+for (const k in ASPIRATE) C[k] = [ASPIRATE[k][0], ASPIRATE[k][1], 'aspirated — loan phoneme'];
+
+/* Vowels. Brahui has NO short /e o/ (Krishnamurti 2003:118) — the original
+   file was right about this. Diphthongs /ai au/ ARE phonemic and were missing. */
+const V = {
+  'a' :{ini:'اَ' ,mid:'\u064E'  ,fin:'ہ'  ,ipa:'ə' ,note:'short — u in cut'},
+  'i' :{ini:'اِ' ,mid:'\u0650'  ,fin:'ی'  ,ipa:'ɪ' ,note:'short — i in sit'},
+  'u' :{ini:'اُ' ,mid:'\u064F'  ,fin:'و'  ,ipa:'ʊ' ,note:'short — oo in book'},
+  'á' :{ini:'آ'  ,mid:'\u064Eا' ,fin:'ا'  ,ipa:'aː',note:'long — a in father'},
+  'í' :{ini:'اِی',mid:'\u0650ی' ,fin:'ی'  ,ipa:'iː',note:'long — ee in see'},
+  'ú' :{ini:'اُو',mid:'\u064Fو' ,fin:'و'  ,ipa:'uː',note:'long — oo in food'},
+  'e' :{ini:'اے' ,mid:'ے'       ,fin:'ے'  ,ipa:'eː',note:'long — pure ay, no glide'},  // FIX: bare ے
+  'o' :{ini:'او' ,mid:'و'       ,fin:'و'  ,ipa:'oː',note:'long — pure o, no glide'},   // FIX: bare و, was colliding with ú
+  'ai':{ini:'اَی',mid:'\u064Eی' ,fin:'َے' ,ipa:'əɪ̯',note:'diphthong — eye'},            // ADDED
+  'au':{ini:'اَو',mid:'\u064Eو' ,fin:'َو' ,ipa:'əʊ̯',note:'diphthong — how'}             // ADDED
+};
+
+const SUKUN='\u0652', SHADDA='\u0651';
+
+/* ASCII fallbacks → canonical Latin.
+   REMOVED: kh→x, gh→ģ, ch→c, tt→ŧ, dd→đ, rr→ŕ, aa→á, ee→e, oo→o.
+   Every one of those silently destroyed a real Brahui contrast:
+     "khuriyaa" (goatherd) became "xuriyá"; "batta" became "baŧa";
+     "massuno" could not be written at all. */
+const ALIAS={
+  'ḍ':'đ','ġ':'ģ','ḷ':'ļ','ż':'ź',        // accept the older diacritics
+  'lh':'ļ','LH':'ļ','L':'ļ',              // ILCAA corpus writes ɬ as LH
+  'sh':'ş','SH':'ş','S':'ş',
+  'zh':'ź','ZH':'ź','Z':'ź',
+  'gh_':'ģ','GH':'ģ','G':'ģ','X':'x',
+  'T':'ŧ','D':'đ','R':'ŕ','N':'ń',
+  /* Long vowels doubled. SAFE, unlike tt/dd/rr: Brahui has no short e/o and
+     no a-a hiatus, so nothing is lost — and this is exactly the convention
+     the ILCAA corpus uses (baaz, iilumii, kuuTaGH). */
+  'aa':'á','ii':'í','uu':'ú','AA':'á','II':'í','UU':'ú',
+  'A':'á','I':'í','U':'ú','ð':'đ','ţ':'ŧ','w':'v'
+};
+
+const KEYS=[...Object.keys(ALIAS),...Object.keys(C),...Object.keys(V)]
+  .sort((a,b)=>b.length-a.length);
+
+/* ---------- 2. ENGINE ---------- */
+function tokenize(word){
+  word=word.normalize('NFC');
+  const out=[]; let i=0;
+  while(i<word.length){
+    let hit=null;
+    for(const k of KEYS){ if(word.startsWith(k,i)){hit=k;break;} }
+    if(hit){ out.push(ALIAS[hit]||hit); i+=hit.length; }
+    else { out.push(word[i]); i++; }
+  }
+  return out;
+}
+
+/* opts.sukun  — true for TTS output, false for stored Brahui orthography.
+   Native Brahui text does not write sukun; Urdu TTS front-ends need it. */
+function toUrdu(word,opts){
+  const sukun = !opts || opts.sukun !== false;
+  const t=tokenize(word); let s='';
+  for(let i=0;i<t.length;i++){
+    const tk=t[i], nx=t[i+1], prev=t[i-1];
+    if(C[tk]){
+      if(prev===tk) s+=SHADDA;          // FIX: geminate = shadda, not letter+sukun
+      else s+=C[tk][0];
+      if(nx&&V[nx]){
+        const atEnd = (i+2>=t.length);
+        s += (atEnd && V[nx].fin && 'aiu'.includes(nx)) ? V[nx].fin : V[nx].mid;
+        i++;
+      } else if(sukun && nx!==tk) s+=SUKUN;   // no sukun before a geminate — shadda carries it
+    } else if(V[tk]){
+      s += (s==='') ? V[tk].ini : V[tk].mid;
+    } else s+=tk;
+  }
+  return s;
+}
+function toIPA(word){
+  return tokenize(word).map(t=>C[t]?C[t][1]:(V[t]?V[t].ipa:t)).join('');
+}
+function line(txt,opts){
+  return txt.split(/(\s+|-)/).map(w=>/^[\s-]*$/.test(w)?w:toUrdu(w,opts)).join('');
+}
+function lineIPA(txt){
+  return txt.split(/(\s+|-)/).map(w=>/^[\s-]*$/.test(w)?w:toIPA(w)).join('');
+}
+
+/* Azure <phoneme alphabet="ipa"> — plain symbols only, no combining marks. */
+const AZIPA={
+  b:'b',p:'p',t:'t','ŧ':'ʈ',d:'d','đ':'ɖ',k:'k',g:'g',f:'f',v:'ʋ',
+  s:'s',z:'z','ş':'ʃ','ź':'ʒ',x:'x','ģ':'ɣ',h:'h',c:'tʃ',j:'dʒ',
+  m:'m',n:'n','ń':'ɳ',l:'l','ļ':'ɬ',r:'ɾ','ŕ':'ɽ',y:'j',"'":'ʔ',
+  a:'ə','á':'aː',i:'ɪ','í':'iː',u:'ʊ','ú':'uː',e:'eː',o:'oː',
+  ai:'aɪ',au:'aʊ',
+  bh:'b',ph:'pʰ',th:'tʰ','ŧh':'ʈʰ',dh:'d','đh':'ɖ',kh:'kʰ',gh:'g',
+  ch:'tʃʰ',jh:'dʒ','ŕh':'ɽ'
+};
+function toAzIPA(word){ return tokenize(word).map(t=>AZIPA[t]||'').join(''); }
+function lineAzIPA(txt){ return txt.split(/\s+/).filter(Boolean).map(toAzIPA); }
+
+/* ---------- REVERSE: Urdu script -> Brahui Latin ---------- */
+const RC={
+  'ب':'b','پ':'p','ت':'t','ٹ':'ŧ','د':'d','ڈ':'đ','ک':'k','ك':'k','گ':'g',
+  'ف':'f','س':'s','ص':'s','ث':'s','ز':'z','ذ':'z','ض':'z','ظ':'z',
+  'ش':'ş','ژ':'ź','خ':'x','غ':'ģ','ہ':'h','ح':'h','ه':'h',
+  'چ':'c','ج':'j','م':'m','ن':'n','ں':'ń','ل':'l','ڷ':'ļ','ر':'r','ڑ':'ŕ',
+  'ط':'t','ع':"'",'ء':"'",'ق':'k'
+};
+const RMARK={'\u064E':'a','\u0650':'i','\u064F':'u','\u0652':'','\u0670':'á'};
+
+const SCRIPT_FIX={'\u0643':'\u06A9','\u064A':'\u06CC','\u0649':'\u06CC',
+  '\u0629':'\u06C1','\u0647':'\u06C1','\u06C3':'\u06C1','\u0624':'\u0648','\u0626':'\u06CC'};
+function normalizeScript(t){
+  return [...t.normalize('NFC')].map(c=>SCRIPT_FIX[c]||c).join('')
+    .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g,'');
+}
+
+function fromUrdu(word){
+  word=normalizeScript(word);
+  const ch=[...word];
+  let out=[], guessed=0;
+  for(let i=0;i<ch.length;i++){
+    const c=ch[i], nx=ch[i+1], prev=out[out.length-1];
+
+    /* FIX: word-initial alif is a VOWEL CARRIER, not a vowel.
+       The original pushed 'a' for the alif and then 'a' again for the
+       fatha on top of it, so اِس came back as "ais" and اَسِٹ as "aasiŧ". */
+    if(i===0 && c==='ا'){
+      if(nx && RMARK[nx]!==undefined){ continue; }   // haraka supplies the vowel
+      if(nx==='ی'){ out.push('í'); i++; continue; }
+      if(nx==='و'){ out.push('ú'); i++; continue; }
+      if(nx==='ے'){ out.push('e');  i++; continue; }
+      out.push('a'); continue;
+    }
+
+    /* FIX: shadda geminates the preceding CONSONANT. NFC canonical ordering
+       sorts damma (ccc 31) before shadda (ccc 33), so by the time we reach
+       the shadda the last token may be a vowel. Walk back to the consonant
+       and splice the copy in before that vowel. */
+    if(c===SHADDA){
+      const vowels=['a','á','i','í','u','ú','e','o','ai','au'];
+      let k=out.length-1;
+      while(k>=0 && vowels.includes(out[k])) k--;
+      if(k>=0) out.splice(k+1,0,out[k]);
+      continue;
+    }
+
+    if(RMARK[c]!==undefined){
+      const m=RMARK[c];
+      if(m==='a'&&nx==='ا'){ out.push('á'); i++; }
+      else if(m==='a'&&nx==='ی'){ out.push('ai'); i++; }
+      else if(m==='a'&&nx==='و'){ out.push('au'); i++; }
+      else if(m==='i'&&nx==='ی'){ out.push('í'); i++; }
+      else if(m==='u'&&nx==='و'){ out.push('ú'); i++; }
+      else if(m) out.push(m);
+      continue;
+    }
+    if(c==='ھ'){ if(prev&&C[prev+'h']) out[out.length-1]=prev+'h'; continue; } // FIX: aspirates
+    if(c==='آ'){ out.push('á'); continue; }
+    if(c==='ا'){ out.push('á'); continue; }
+    if(c==='ے'){ out.push('e'); continue; }
+    if(c==='ی'||c==='ي'){
+      out.push((out.length===0||'aáiíuúeo'.includes(prev))?'y':'í'); continue;
+    }
+    if(c==='و'){
+      out.push((out.length===0||'aáiíuúeo'.includes(prev))?'v':'o'); continue;
+    }
+    if(RC[c]!==undefined){ if(RC[c]) out.push(RC[c]); continue; }
+  }
+  /* Only guess at missing short vowels when the writer supplied NO aerab.
+     If the word is vocalized, an unmarked consonant cluster is a real
+     cluster (ińsán), not a gap — flagging it produced "ińₐsán". */
+  const HARAKA=/[\u064B-\u0652\u0670]/;
+  const vocalized = HARAKA.test(word);
+  let res='';
+  const isV=v=>['a','á','i','í','u','ú','e','o','ai','au'].includes(v);
+  for(let i=0;i<out.length;i++){
+    const t=out[i], nx=out[i+1];
+    res+=t;
+    if(!vocalized && t&&!isV(t)&&nx&&!isV(nx)&&t!==nx){ res+='\u2090'; guessed++; }
+  }
+  return {latin:res, guessed};
+}
+
+/* ============================================================
+   SEED LEXICON — Brahui
+   Every entry carries a source tag. Nothing here is invented.
+
+     UDHR  Universal Declaration of Human Rights Art.1, Brahui Language
+           Board / Univ. of Balochistan parallel text (Latin + script)
+     TOC   Ali, Liaquat & Masato Kobayashi (2024), "Brahui Texts",
+           ILCAA, Tokyo Univ. of Foreign Studies — story titles are
+           glossed by the authors, so these pairings are published
+     GRAM  Published grammatical description (verb paradigms,
+           numerals, pronouns)
+     CORP  ILCAA corpus, meaning inferred from unambiguous context.
+           *** THESE NEED SPEAKER CONFIRMATION *** — they are the
+           rows to put in front of a Brahui speaker first.
+
+   Fields: br = Brolikva Latin (source of truth — script and IPA are
+   regenerated from it, so an engine fix propagates for free)
+   ============================================================ */
+
+const SEED = [
+
+/* ---- pronouns & deixis (GRAM) ---- */
+{br:'ii',      en:'I',                       src:'GRAM'},
+{br:'nan',     en:'we',                      src:'GRAM'},
+{br:'nii',     en:'you (singular)',           src:'GRAM'},
+{br:'num',     en:'you (plural)',             src:'GRAM'},
+{br:'o',       en:'he, she, it; that',        src:'GRAM'},
+{br:'daa',     en:'this',                     src:'GRAM'},
+{br:'ten',     en:'self, own',                src:'GRAM'},
+{br:'ant',     en:'what',                     src:'GRAM'},
+{br:'amar',    en:'how',                      src:'GRAM'},
+{br:'araa',    en:'where',                    src:'CORP'},
+{br:'har.kas', en:'everyone',                 src:'CORP'},
+
+/* ---- numerals. 1-3 are Dravidian, 4+ are Iranian loans (GRAM) ---- */
+{br:'asiŧ',    en:'one',                      src:'GRAM'},
+{br:'iraŧ',    en:'two',                      src:'GRAM'},
+{br:'musiŧ',   en:'three',                    src:'GRAM'},
+{br:'cár',     en:'four',                     src:'GRAM'},
+{br:'panc',    en:'five',                     src:'GRAM'},
+{br:'şaş',     en:'six',                      src:'GRAM'},
+{br:'haft',    en:'seven',                    src:'GRAM'},
+{br:'haşt',    en:'eight',                    src:'GRAM'},
+{br:'bíst',    en:'twenty',                   src:'CORP'},
+{br:'panjá',   en:'fifty',                    src:'CORP'},
+{br:'sad',     en:'hundred',                  src:'CORP'},
+
+/* ---- the verb "to be" (GRAM) ---- */
+{br:'uŧ',      en:'I am',                     src:'GRAM'},
+{br:'un',      en:'we are',                   src:'GRAM'},
+{br:'us',      en:'you are',                  src:'GRAM'},
+{br:'e',       en:'is',                       src:'GRAM'},
+{br:'as',      en:'was',                      src:'GRAM'},
+{br:'assuŧ',   en:'I was',                    src:'GRAM'},
+{br:'affaŧ',   en:'I am not',                 src:'GRAM'},
+{br:'aff',     en:'is not',                   src:'GRAM'},
+
+/* ---- core verbs (GRAM + CORP) ---- */
+{br:'bar',     en:'to come',                  src:'GRAM'},
+{br:'bassuŧ',  en:'I came',                   src:'GRAM'},
+{br:'hin',     en:'to go',                    src:'CORP'},
+{br:'kun',     en:'to eat, to drink',         src:'CORP'},
+{br:'xan',     en:'to see',                   src:'CORP'},
+{br:'pár',     en:'to say',                   src:'CORP'},
+{br:'hal',     en:'to take',                  src:'CORP'},
+{br:'tis',     en:'gave',                     src:'CORP'},
+{br:'mas',     en:'became',                   src:'CORP'},
+{br:'kar',     en:'to do, to make',           src:'CORP'},
+{br:'hur',     en:'to look, to think',        src:'CORP'},
+{br:'tuus',    en:'to sit',                   src:'CORP'},
+{br:'xácing',  en:'to sleep, to lie down',    src:'CORP'},
+{br:'xuáf',    en:'to graze, to tend',        src:'CORP'},
+{br:'harf',    en:'to carry, to take away',   src:'CORP'},
+{br:'tamm',    en:'to fall, to happen',       src:'CORP'},
+{br:'kaşş',    en:'to pull out, to take out', src:'CORP'},
+{br:'biŧ',     en:'to throw',                 src:'CORP'},
+{br:'vadí',    en:'born',                     src:'UDHR'},
+{br:'massuno', en:'they became',              src:'UDHR'},
+
+/* ---- people & kinship (TOC + CORP) ---- */
+{br:'bandaģ',  en:'man, person',              src:'TOC'},
+{br:'insán',   en:'human being',              src:'UDHR'},
+{br:'musáfir', en:'traveller',                src:'TOC'},
+{br:'şohán',   en:'shepherd',                 src:'TOC'},
+{br:'khuriyá', en:'goatherd',                 src:'TOC'},
+{br:'ģaríb',   en:'poor man',                 src:'TOC'},
+{br:'kaedí',   en:'prisoner',                 src:'TOC'},
+{br:'kumakkár',en:'protector',                src:'TOC'},
+{br:'buzurg',  en:'elder, holy man',          src:'TOC'},
+{br:'baadşá',  en:'king',                     src:'CORP'},
+{br:'maar',    en:'son, child',               src:'CORP'},
+{br:'masiŕ',   en:'daughter',                 src:'CORP'},
+{br:'zaaífa',  en:'wife, woman',              src:'CORP'},
+{br:'bíbí',    en:'lady, wife',               src:'CORP'},
+{br:'lumma',   en:'mother',                   src:'CORP'},
+{br:'báva',    en:'father',                   src:'CORP'},
+{br:'ílum',    en:'friend, brother',          src:'CORP'},
+{br:'ílumí',   en:'brotherhood, friendship',  src:'UDHR'},
+{br:'iilumk',  en:'friends, brothers',        src:'CORP'},
+{br:'vazír',   en:'minister',                 src:'CORP'},
+{br:'kaazí',   en:'judge',                    src:'CORP'},
+{br:'baxxál',  en:'merchant, shopkeeper',     src:'CORP'},
+{br:'maxlúk',  en:'people, crowd',            src:'CORP'},
+
+/* ---- animals (TOC) ---- */
+{br:'xazm',    en:'deer',                     src:'TOC'},
+{br:'xáxo',    en:'crow',                     src:'TOC'},
+{br:'şok',     en:'fox',                      src:'TOC'},
+{br:'bođ',     en:'louse',                    src:'TOC'},
+{br:'hullí',   en:'horse',                    src:'TOC'},
+{br:'meļ',     en:'sheep, goats',             src:'CORP'},
+{br:'khur',    en:'flock',                    src:'CORP'},
+{br:'đhaggí',  en:'cow',                      src:'CORP'},
+{br:'dúşa',    en:'snake',                    src:'CORP'},
+{br:'nariyán', en:'stallion',                 src:'CORP'},
+
+/* ---- body (GRAM + CORP) ---- */
+{br:'ust',     en:'heart, mind',              src:'GRAM'},
+{br:'kaaŧum',  en:'head',                     src:'CORP'},
+{br:'xan',     en:'eye',                      src:'CORP'},
+{br:'bá',      en:'mouth',                    src:'GRAM'},
+{br:'mon',     en:'face, front',              src:'CORP'},
+{br:'nat',     en:'ear',                      src:'CORP'},
+{br:'rán',     en:'thigh, leg',               src:'CORP'},
+{br:'suu',     en:'meat, flesh',              src:'CORP'},
+{br:'jaan',    en:'body, life',               src:'CORP'},
+
+/* ---- world & things (TOC + CORP) ---- */
+{br:'diir',    en:'water',                    src:'CORP'},
+{br:'urá',     en:'house',                    src:'CORP'},
+{br:'şár',     en:'town, city',               src:'CORP'},
+{br:'mulk',    en:'country',                  src:'CORP'},
+{br:'jangal',  en:'forest',                   src:'CORP'},
+{br:'draxt',   en:'tree',                     src:'CORP'},
+{br:'buuc',    en:'mountain',                 src:'CORP'},
+{br:'daryáb',  en:'river, sea',               src:'CORP'},
+{br:'baaģ',    en:'garden',                   src:'CORP'},
+{br:'xolum',   en:'wheat',                    src:'TOC'},
+{br:'kaŕo',    en:'grain',                    src:'TOC'},
+{br:'iraģ',    en:'food',                     src:'CORP'},
+{br:'puc',     en:'clothes',                  src:'CORP'},
+{br:'xíisun',  en:'gold',                     src:'CORP'},
+{br:'píihun',  en:'silver',                   src:'CORP'},
+{br:'ruppaí',  en:'rupee',                    src:'CORP'},
+{br:'kaldár',  en:'coin, rupee',              src:'CORP'},
+{br:'giŕá',    en:'thing',                    src:'CORP'},
+{br:'thaŕa',   en:'porch',                    src:'TOC'},
+
+/* ---- time (CORP) ---- */
+{br:'de',      en:'day',                      src:'CORP'},
+{br:'sob',     en:'morning',                  src:'CORP'},
+{br:'şám',     en:'evening',                  src:'CORP'},
+{br:'nan',     en:'night',                    src:'CORP'},
+{br:'pagga',   en:'tomorrow',                 src:'CORP'},
+{br:'tuu',     en:'month',                    src:'CORP'},
+{br:'saal',    en:'year',                     src:'CORP'},
+{br:'vaxt',    en:'time',                     src:'CORP'},
+{br:'must',    en:'before, formerly',         src:'CORP'},
+{br:'aeno',    en:'now',                      src:'CORP'},
+
+/* ---- qualities & abstractions (UDHR + TOC + CORP) ---- */
+{br:'muccá',   en:'all',                      src:'UDHR'},
+{br:'ájo',     en:'free',                     src:'UDHR'},
+{br:'izzat',   en:'dignity, honour',          src:'UDHR'},
+{br:'rid',     en:'right, way',               src:'UDHR'},
+{br:'barebar', en:'equal',                    src:'UDHR'},
+{br:'puhí',    en:'reason, understanding',    src:'UDHR'},
+{br:'dalíl',   en:'conscience, argument',     src:'UDHR'},
+{br:'juán',    en:'good',                     src:'CORP'},
+{br:'bhallo',  en:'big, great',               src:'CORP'},
+{br:'cunk',    en:'small',                    src:'CORP'},
+{br:'baaz',    en:'much, many',               src:'CORP'},
+{br:'kam',     en:'little, few',              src:'CORP'},
+{br:'xuş',     en:'happy',                    src:'CORP'},
+{br:'tuģ',     en:'dream',                    src:'TOC'},
+{br:'bahá',    en:'price',                    src:'TOC'},
+{br:'mehr',    en:'love',                     src:'TOC'},
+{br:'baxt',    en:'luck, fortune',            src:'TOC'},
+{br:'bevas',   en:'powerless, helpless',      src:'TOC'},
+{br:'rág',     en:'tune, drama',              src:'TOC'},
+{br:'kissa',   en:'story',                    src:'CORP'},
+{br:'havál',   en:'news, account',            src:'CORP'},
+
+/* ---- particles & function words (UDHR + CORP) ---- */
+{br:'ná',      en:'of (genitive)',            src:'UDHR'},
+{br:'aŧ',      en:'in, at',                   src:'UDHR'},
+{br:'ton',     en:'with',                     src:'UDHR'},
+{br:'elo',     en:'other, another',           src:'UDHR'},
+{br:'o',       en:'and',                      src:'UDHR'},
+{br:'pen',     en:'other, again',             src:'CORP'},
+{br:'rand',    en:'after, behind',            src:'CORP'},
+{br:'guŕá',    en:'then, so',                 src:'CORP'},
+{br:'magar',   en:'but',                      src:'CORP'},
+{br:'aga',     en:'if',                       src:'CORP'},
+{br:'hao',     en:'yes',                      src:'CORP'},
+{br:'na',      en:'no, not',                  src:'CORP'}
+];
+
+/* ---- sentences, for phrase building ----
+   Left column is the published Brolikva; right is the published
+   English. Both come from the same parallel texts as above. */
+const SEED_PHRASES = [
+ {br:'Muccá insáńk ájo o izzat ná rid aŧ barebar vadí massuno.',
+  en:'All human beings are born free and equal in dignity and rights.', src:'UDHR'},
+ {br:'Ofte puhí o dalíl raseńgáne.',
+  en:'They are endowed with reason and conscience.', src:'UDHR'},
+ {br:'Andáde ofte asi elo ton ílumí e vaddifoí e.',
+  en:'They should act towards one another in a spirit of brotherhood.', src:'UDHR'},
+ {br:'Asi xazmas as, asi xáxoas as, asi şokas as.',
+  en:'There was a deer, a crow and a fox.', src:'CORP'},
+ {br:'Dá har musiŧŧingák asieloton ílumí karer.',
+  en:'These three were friends with one another.', src:'CORP'},
+ {br:'As asi şohánas.',
+  en:'There was a shepherd.', src:'CORP'},
+ {br:'Asi deas xácá, tuģas xaná.',
+  en:'One day he slept and saw a dream.', src:'CORP'},
+ {br:'Asi ģaríbas assak.',
+  en:'There was a poor man.', src:'CORP'},
+ {br:'Salám alek.',  en:'Peace be upon you (greeting).', src:'CORP'},
+ {br:'Válekum salám.', en:'And upon you peace (reply).', src:'CORP'},
+ {br:'Xudá háfiz.',  en:'Goodbye.', src:'CORP'},
+ {br:'Et havále.',   en:'Tell the news.', src:'CORP'}
+];
+
+
+/* ---------- 2b. DERIVED OUTPUTS ---------- */
+
+/* Real words the Urdu voice already knows, one per vowel. A nonsense
+   frame cannot carry a short vowel because Urdu does not write them. */
+const VEX={
+  'a':['بس','bas','short a'],   'á':['بات','bát','long aa'],
+  'i':['دل','dil','short i'],   'í':['تین','tín','long ee'],
+  'u':['گم','gum','short u'],   'ú':['دور','dúr','long oo'],
+  'e':['میز','mez','long e'],   'o':['دو','do','long o'],
+  'ai':['ہے','hai','diphthong ai'], 'au':['کون','kaun','diphthong au']
+};
+
+/* Devanagari. Most browsers ship no Urdu voice at all, but nearly all ship
+   Google हिन्दी (hi-IN). Hindi is a far better host than English: it has the
+   dental/retroflex contrast, the aspirate series, and long/short vowels —
+   three things Brahui needs and English cannot express. Only /ɬ/ is lost. */
+const DC={
+  b:'ब',p:'प',t:'त','ŧ':'ट',d:'द','đ':'ड',k:'क',g:'ग',f:'फ़',v:'व',
+  s:'स',z:'ज़','ş':'श','ź':'ज़',x:'ख़','ģ':'ग़',h:'ह',c:'च',j:'ज',
+  m:'म',n:'न','ń':'ण',l:'ल','ļ':'ल',r:'र','ŕ':'ड़',y:'य',"'":'',
+  bh:'भ',ph:'फ',th:'थ','ŧh':'ठ',dh:'ध','đh':'ढ',kh:'ख',gh:'घ',
+  ch:'छ',jh:'झ','ŕh':'ढ़'
+};
+const DV={
+  a:{ind:'अ',m:''},   'á':{ind:'आ',m:'ा'},
+  i:{ind:'इ',m:'ि'},  'í':{ind:'ई',m:'ी'},
+  u:{ind:'उ',m:'ु'},  'ú':{ind:'ऊ',m:'ू'},
+  e:{ind:'ए',m:'े'},  o:{ind:'ओ',m:'ो'},
+  ai:{ind:'ऐ',m:'ै'}, au:{ind:'औ',m:'ौ'}
+};
+const VIRAMA='\u094D';
+function toDeva(word){
+  const t=tokenize(word); let s='';
+  for(let i=0;i<t.length;i++){
+    const tk=t[i], nx=t[i+1];
+    if(DC[tk]!==undefined){
+      s+=DC[tk];
+      if(nx&&DV[nx]){ s+=DV[nx].m; i++; }
+      else s+=VIRAMA;
+    } else if(DV[tk]) s+=(s===''?DV[tk].ind:DV[tk].m);
+  }
+  return s;
+}
+function lineDeva(t){ return t.split(/\s+/).filter(Boolean).map(toDeva).join(' '); }
+
+/* English respelling. en-IN is the best host: it realises English t/d as
+   retroflex, which is what Brahui needs. */
+const ENG={
+  b:'b',p:'p',t:'t','ŧ':'t',d:'d','đ':'d',k:'k',g:'g',f:'f',v:'w',
+  s:'s',z:'z','ş':'sh','ź':'zh',x:'kh','ģ':'gh',h:'h',c:'ch',j:'j',
+  m:'m',n:'n','ń':'n',l:'l','ļ':'hl',r:'r','ŕ':'r',y:'y',"'":'',
+  a:'uh','á':'aa',i:'ih','í':'ee',u:'oo','ú':'ooh',e:'ay',o:'oh',
+  ai:'y',au:'ow',
+  bh:'bh',ph:'ph',th:'th','ŧh':'th',dh:'dh','đh':'dh',kh:'kh',gh:'gh',
+  ch:'chh',jh:'jh','ŕh':'rh'
+};
+/* No English sound exists for these. ļ is the big one — Welsh Ll. */
+const ENG_GAPS=['x','ģ','ļ',"'"];
+function toEnglish(w){ return tokenize(w).map(t=>ENG[t]!==undefined?ENG[t]:t).join(''); }
+function lineEnglish(t){ return t.split(/\s+/).filter(Boolean).map(toEnglish).join(' '); }
+
+/* Diacritic-stripping G2P front ends still honour real letters, so long
+   vowels survive through mater lectionis. Short vowels stay unwritten. */
+const VPLAIN={
+  'a':{ini:'ا',mid:'',fin:'ہ'}, 'i':{ini:'ا',mid:'',fin:'ی'},
+  'u':{ini:'ا',mid:'',fin:'و'}, 'á':{ini:'آ',mid:'ا',fin:'ا'},
+  'í':{ini:'ای',mid:'ی',fin:'ی'},'ú':{ini:'او',mid:'و',fin:'و'},
+  'e':{ini:'اے',mid:'ے',fin:'ے'},'o':{ini:'او',mid:'و',fin:'و'},
+  'ai':{ini:'اَی',mid:'ی',fin:'ے'},'au':{ini:'اَو',mid:'و',fin:'و'}
+};
+function toUrduPlain(word){
+  const t=tokenize(word); let s='';
+  for(let i=0;i<t.length;i++){
+    const tk=t[i];
+    if(C[tk]) s+=C[tk][0];
+    else if(VPLAIN[tk]){
+      const v=VPLAIN[tk];
+      s+= (s===''?v.ini:(i===t.length-1?v.fin:v.mid));
+    }
+  }
+  return s||word;
+}
+function linePlain(t){ return t.split(/\s+/).filter(Boolean).map(toUrduPlain).join(' '); }
+function stripMarks(s){ return s.replace(/[\u064B-\u0652]/g,''); }
+function carrier(t){ return document.getElementById('carrier').checked ? 'یہ '+t+' ہے' : t; }
+
+const HARAKA='\u064B\u064C\u064D\u064E\u064F\u0650\u0651\u0652\u0670';
+function validateAerab(t){
+  const out=[];
+  for(const w of normalizeScript(t).split(/\s+/).filter(Boolean)){
+    const ch=[...w]; let marked=0,cons=0;
+    for(let i=0;i<ch.length;i++){
+      const c=ch[i], prev=ch[i-1];
+      if(HARAKA.includes(c)){
+        marked++;
+        if(i===0) out.push(w+': a vowel mark opens the word — it must follow a letter');
+        else if(HARAKA.includes(prev)&&prev!=='\u0651') out.push(w+': two vowel marks in a row');
+      } else if(RC[c]!==undefined||'اآوی ےں'.includes(c)) cons++;
+    }
+    if(cons>1&&marked===0) out.push(w+': no aerab at all — short vowels unrecoverable');
+  }
+  return out;
+}
+
+/* ---------- 3. SPEECH ---------- */
+let voices=[];
+function loadVoices(){
+  voices=speechSynthesis.getVoices();
+  const sel=document.getElementById('voice');
+  sel.innerHTML=voices.map((v,i)=>`<option value="${i}">${v.name} — ${v.lang}</option>`).join('');
+  /* Preference order matters. Almost no desktop ships an Urdu voice, so
+     fall through to Hindi, which shares most of Brahui's consonants. */
+  const find=re=>voices.findIndex(v=>re.test(v.lang)||re.test(v.name));
+  /* Prefer Pakistan Urdu over India Urdu — closer to the Brahui-speaking area. */
+  const ur=[/^ur-PK/i,/urdu \(pakistan\)/i,/^ur/i,/urdu/i].map(find).find(i=>i>=0);
+  const hi=find(/^hi|hindi/i), en=find(/^en-IN/i), any=find(/^en/i);
+  if(ur!==undefined&&ur>=0){
+    sel.value=ur;
+    /* Reset Send if an earlier fallback left it on a substitute script. */
+    const m=document.getElementById('mode');
+    if(m.value==='deva'||m.value==='eng') m.value='text';
+    msg('Urdu voice found: <b>'+voices[ur].name+'</b>. Send set to <b>Urdu text</b>. Note that <b>ڷ</b> /ɬ/ is still not in any Urdu voice — use the ڷ check button to hear what it substitutes.');
+  }
+  else if(hi>=0){
+    sel.value=hi;
+    document.getElementById('mode').value='deva';
+    msg('No Urdu voice is installed in this browser, so <b>Google हिन्दी (hi-IN)</b> has been selected and Send switched to <b>Devanagari</b>. Hindi carries the retroflexes, aspirates and vowel length that Brahui needs — everything except <b>ڷ</b> /ɬ/, which no Indic voice has. For a real Urdu voice use Engine → Azure.');
+  } else if(en>=0||any>=0){
+    sel.value=en>=0?en:any;
+    document.getElementById('mode').value='eng';
+    msg('No Urdu or Hindi voice is installed, so an English voice has been selected and Send switched to <b>English respelling</b>. This is the weakest option — English cannot express the retroflex or aspirate contrasts. Install a Hindi voice, or use Engine → Azure.');
+  }
+}
+speechSynthesis.onvoiceschanged=loadVoices; loadVoices();
+
+/* Edge fetches its Online (Natural) voices from the network after the page
+   has already loaded, so the first getVoices() returns local voices only.
+   Poll for a few seconds and re-select once the Urdu voice shows up. */
+(function pollForOnline(){
+  let n=0, seen=speechSynthesis.getVoices().length;
+  const t=setInterval(()=>{
+    const now=speechSynthesis.getVoices();
+    if(now.length!==seen){ seen=now.length; loadVoices(); }
+    if(++n>16) clearInterval(t);
+  },400);
+})();
+
+/* Chrome populates getVoices() asynchronously and caches it for the life of
+   the process, so a voice installed after the browser started will not show
+   up until it is fully restarted. This re-polls in case it simply arrived late. */
+function rescanVoices(){
+  let n=0;
+  const t=setInterval(()=>{
+    loadVoices();
+    if(voices.length||++n>10) { clearInterval(t); voiceReport(); }
+  },300);
+}
+
+function browserName(){
+  const u=navigator.userAgent;
+  if(/Edg\//.test(u)) return 'edge';
+  if(/OPR\//.test(u)) return 'opera';
+  if(/Firefox\//.test(u)) return 'firefox';
+  if(/Chrome\//.test(u)) return 'chrome';
+  if(/Safari\//.test(u)) return 'safari';
+  return 'other';
+}
+function voiceReport(){
+  const vs=speechSynthesis.getVoices();
+  const hit=re=>vs.filter(v=>re.test(v.lang)||re.test(v.name));
+  const ur=hit(/^ur|urdu/i), hi=hit(/^hi-|hindi/i), pa=hit(/^pa-|punjabi/i),
+        fa=hit(/^fa-|persian|farsi/i), ar=hit(/^ar-/i), brh=hit(/brahui|^brh/i);
+  const row=(label,list,verdict)=>`<tr><td class="lat-cell">${label}</td>
+    <td class="note">${list.length?list.map(v=>v.name+' — '+v.lang).join('<br>'):'<b>not found</b>'}</td>
+    <td class="note">${verdict}</td></tr>`;
+  document.getElementById('vreport').innerHTML=`
+   <div class="note" style="margin:8px 0 4px">Browser reports <b>${vs.length}</b> voices.</div>
+   <table style="margin-bottom:10px"><tbody>
+   <tr><th>Looking for</th><th>Found</th><th>Verdict</th></tr>
+   ${row('Brahui', brh, brh.length?'Unexpected — please tell me the exact name.':'Expected. <b>No Brahui TTS voice exists anywhere.</b> A Brahui keyboard or display language does not create one.')}
+   ${row('Urdu', ur, ur.length?'<b>Best option.</b> Set Send to <b>Urdu text</b>.':'Not installed as a <i>speech</i> pack. Settings → Time &amp; language → Speech → Manage voices → Add → Urdu. A language pack alone is not enough. Then restart the browser fully.')}
+   ${row('Hindi', hi, hi.length?'Good substitute. Set Send to <b>Devanagari</b>. Carries retroflex, aspirate and vowel length.':'—')}
+   ${row('Punjabi', pa, pa.length?'Usable — Perso-Arabic Shahmukhi, close to Urdu. Try Send = Urdu text.':'—')}
+   ${row('Persian', fa, fa.length?'Partial — Perso-Arabic script, but no retroflex series.':'—')}
+   ${row('Arabic', ar, ar.length?'Weak — reads the script but flattens ٹ ڈ ڑ گ چ پ.':'—')}
+   </tbody></table>
+   ${(function(){
+     const b=browserName();
+     const online=vs.filter(v=>/Online \(Natural\)/i.test(v.name)).length;
+     if(b==='edge'){
+       return online
+        ? `<div class="warn">Edge, with <b>${online}</b> online natural voices loaded. This is the best free setup — no API key needed.</div>`
+        : `<div class="warn">Edge detected, but no <b>Online (Natural)</b> voices have loaded yet. They arrive over the network a few seconds after page load — click <b>Re-scan voices</b>. If they never appear, check that you are online and that Edge is not in a restricted profile.</div>`;
+     }
+     return `<div class="warn">
+       <b>You are not in Microsoft Edge.</b> This is almost certainly why no Urdu voice appears.<br><br>
+       Windows ships <b>no local Urdu TTS voice</b>, so there is nothing to install — a language pack or keyboard will not create one. Chrome and Firefox only see locally installed voices, so they will never list Urdu.<br><br>
+       Edge additionally exposes Microsoft's <b>Online (Natural)</b> voices through this same API, and that set includes Urdu. <b>Open this file in Edge</b> — free, no API key. Then click Re-scan voices.</div>`;
+   })()}
+   <div class="note">Voices installed while a browser was already running will not appear until it is fully closed and reopened — the list is cached for the life of the process.</div>`;
+}
+
+function engineChanged(){
+  const az=document.getElementById('engine').value==='azure';
+  /* The Azure voice list is a fixed set of cloud voice names. It is inert
+     under the Browser engine — showing it there made ur-PK-AsadNeural look
+     selected when the browser had no Urdu voice at all. */
+  document.getElementById('azcreds').style.display=az?'flex':'none';
+  document.getElementById('azvoice').style.display=az?'':'none';
+  document.getElementById('azvlabel').style.display=az?'':'none';
+  document.getElementById('voice').style.display=az?'none':'';
+  document.getElementById('bvlabel').style.display=az?'none':'';
+  modeChanged();
+}
+/* IPA phonemes are an SSML feature. The browser Web Speech API has no
+   equivalent, so under the Browser engine that mode silently did nothing. */
+function modeChanged(){
+  const az=document.getElementById('engine').value==='azure';
+  const m=document.getElementById('mode');
+  const ipaOpt=m.querySelector('option[value="ipa"]');
+  ipaOpt.disabled=!az;
+  ipaOpt.textContent = az ? 'IPA phonemes' : 'IPA phonemes — Azure only';
+  if(!az && m.value==='ipa'){
+    m.value = voices.some(v=>/^hi|hindi/i.test(v.lang+v.name)) ? 'deva' : 'eng';
+    msg('<b>IPA phonemes</b> only works with Azure — the browser speech API cannot accept phoneme strings. Send switched to <b>'+
+        (m.value==='deva'?'Devanagari':'English respelling')+'</b>.');
+  }
+}
+function msg(html){ document.getElementById('voicewarn').innerHTML=html?`<div class="warn">${html}</div>`:''; }
+function xmlEsc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ratePct(){ return Math.round((parseFloat(document.getElementById('rate').value)-1)*100)+'%'; }
+
+function buildSSML(txt,latin,literal){
+  const v=document.getElementById('azvoice').value;
+  const loc=v.slice(0,5);
+  const mode=document.getElementById('mode').value;
+  let body;
+  if(mode==='ipa' && latin){
+    body=latin.split(/\s+/).filter(Boolean).map(w=>{
+      const ph=toAzIPA(w), fb=xmlEsc(toUrdu(w));
+      return ph ? `<phoneme alphabet="ipa" ph="${ph}">${fb}</phoneme>` : fb;
+    }).join('<break time="120ms"/>');
+  } else {
+    const arabic=/^ar-/.test(v);
+    body = (mode==='deva'&&latin) ? xmlEsc(lineDeva(latin))
+         : (mode==='eng'&&latin) ? xmlEsc(lineEnglish(latin))
+         : arabic ? xmlEsc(latin?latin.split(/\s+/).map(w=>toUrdu(w)).join(' '):txt)
+         : xmlEsc(carrier(literal?txt:(latin?linePlain(latin):stripMarks(txt))));
+  }
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${loc}">`+
+         `<voice name="${v}"><prosody rate="${ratePct()}">`+
+         `<break time="250ms"/>${body}<break time="350ms"/>`+
+         `</prosody></voice></speak>`;
+}
+
+const audioCache=new Map(); let player=null;
+async function azureSpeak(txt,latin,literal){
+  const key=document.getElementById('azkey').value.trim();
+  const region=document.getElementById('azregion').value.trim()||'eastus';
+  if(!key){ msg('Paste an Azure Speech subscription key, or switch Engine to Browser to test without one.'); return; }
+  const ssml=buildSSML(txt,latin,literal);
+  if(player){player.pause();player=null;}
+  if(audioCache.has(ssml)){ play(audioCache.get(ssml)); return; }
+  try{
+    const r=await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,{
+      method:'POST',
+      headers:{'Ocp-Apim-Subscription-Key':key,'Content-Type':'application/ssml+xml',
+               'X-Microsoft-OutputFormat':'audio-24khz-96kbitrate-mono-mp3'},
+      body:ssml});
+    if(!r.ok){ msg(`Azure returned ${r.status}. Check the key, the region, and that the voice exists there.`); return; }
+    const url=URL.createObjectURL(await r.blob());
+    audioCache.set(ssml,url); msg(''); play(url);
+  }catch(e){ msg('Request blocked. Call Azure through your own server if the browser blocks it.'); }
+}
+function play(url){ player=new Audio(url); player.play(); }
+
+let warmed=false;
+function browserSpeak(txt,latin,literal){
+  if(!warmed){warmed=true;const w=new SpeechSynthesisUtterance('\u00A0');w.volume=0;speechSynthesis.speak(w);}
+  speechSynthesis.cancel();
+  const mode=document.getElementById('mode').value;
+  const spoken = (mode==='deva'&&latin) ? lineDeva(latin)
+               : (mode==='eng' &&latin) ? lineEnglish(latin)
+               : carrier(literal?txt:(latin?linePlain(latin):stripMarks(txt)));
+  setTimeout(()=>{
+    const u=new SpeechSynthesisUtterance('\u00A0\u00A0 '+spoken.trim()+' \u00A0');
+    const v=voices[document.getElementById('voice').value];
+    if(v){u.voice=v;u.lang=v.lang;} else u.lang='ur-PK';
+    u.rate=parseFloat(document.getElementById('rate').value);
+    speechSynthesis.speak(u);
+  },90);
+}
+function speak(txt,latin,literal){
+  if((!txt||!txt.trim()) && !latin) return;
+  if(!txt) txt=latin.split(/\s+/).map(w=>toUrdu(w)).join(' ');
+  if(document.getElementById('engine').value==='azure') azureSpeak(txt,latin,literal);
+  else browserSpeak(txt,latin,literal);
+}
+function drill(txt,reps,latin,literal){
+  const n=reps||3;
+  if(literal) return speak(Array(n).fill(txt).join('\u060C '),null,true);
+  if(latin) return speak(txt,Array(n).fill(latin).join(' '));
+  speak(Array(n).fill(txt).join('\u060C '));
+}
+function speakOut(){ speak(document.getElementById('o-ur').textContent,document.getElementById('src').value); }
+function testVoice(){ speak('یِہ اُردُو آواز کا اِمتِحان ہے'); }
+function phTest(){
+  msg('Listen for four distinct sounds: ta — ṭaa — tii — ti. All alike means <code>ph</code> is being ignored and you need another locale.');
+  speak('','tá ŧá tí ti');
+}
+function lhTest(){
+  msg('This is <b>ڷ</b> /ɬ/, the one sound unique to Brahui. No Urdu voice has it. If <b>meļ</b> and <b>mel</b> sound identical, the voice is substituting plain l — note it and move on, it is a limit of the voice, not of the spelling.');
+  speak('','meļ mel meļ mel');
+}
+function copySSML(){ navigator.clipboard.writeText(buildSSML(document.getElementById('o-ur').textContent,document.getElementById('src').value)); }
+function esc(s){ return JSON.stringify(s).replace(/"/g,'&quot;'); }
+engineChanged();
+
+/* ---------- 4. SOUND INVENTORY ---------- */
+function FRAME(k,isC){
+  if(isC) return k+'á';
+  if(k==='e'||k==='o') return 'b'+k;
+  return 'b'+k+'b';
+}
+const GROUPS=[
+  ['Stops & affricates',['b','p','t','ŧ','d','đ','k','g','c','j']],
+  ['Fricatives',['f','v','s','z','ş','ź','x','ģ','h']],
+  ['Nasals, liquids & glide',['m','n','ń','l','ļ','r','ŕ','y',"'"]],
+  ['Aspirates — loan phonemes',['bh','ph','th','ŧh','dh','đh','kh','gh','ch','jh','ŕh']],
+  ['Vowels',['a','á','i','í','u','ú','e','o','ai','au']]
+];
+function renderSounds(){
+  const q=document.getElementById('filter').value.toLowerCase();
+  let h='';
+  for(const [name,items] of GROUPS){
+    const rows=items.filter(k=>{
+      const s=(k+' '+(C[k]?C[k][1]+' '+C[k][2]:V[k].ipa+' '+V[k].note)).toLowerCase();
+      return !q||s.includes(q);
+    });
+    if(!rows.length) continue;
+    h+=`<tr><td colspan="5" style="padding:0"><div class="grp">${name}</div></td></tr>`;
+    for(const k of rows){
+      const isC=!!C[k];
+      const ur = isC ? C[k][0]+'\u064E' : V[k].ini;
+      const ipa= isC ? C[k][1] : V[k].ipa;
+      const note=isC ? C[k][2] : V[k].note;
+      const fr = FRAME(k,isC);
+      const vx = !isC && VEX[k];
+      const say= vx ? vx[0] : toUrdu(fr);
+      const lit= vx ? 'true' : 'false';
+      const gap= ENG_GAPS.includes(k);
+      h+=`<tr>
+        <td class="lat-cell">${k}</td>
+        <td class="ipa">[${ipa}]</td>
+        <td class="ur" style="font-size:20px;width:80px">${ur}</td>
+        <td class="note">${note}${vx?` — as in <b>${vx[0]}</b> (${vx[1]})`:''}${gap?' <b>— no English equivalent</b>':''}</td>
+        <td style="width:120px;white-space:nowrap">
+          <button onclick="drill(${esc(say)},3,${esc(fr)},${lit})">Drill</button>
+          <button onclick="speak(${esc(say)},${esc(fr)},${lit})">Once</button>
+        </td></tr>`;
+    }
+  }
+  document.querySelector('#sounds tbody').innerHTML=h;
+}
+renderSounds();
+
+/* ---------- 5. CONVERTER / REVERSE UI ---------- */
+function convert(){
+  const v=document.getElementById('src').value;
+  document.getElementById('o-ur').textContent=line(v,{sukun:false})||'\u00A0';
+  document.getElementById('o-tts').textContent=line(v)||'\u00A0';
+  document.getElementById('o-ipa').textContent='/'+lineIPA(v)+'/';
+  document.getElementById('o-plain').textContent=linePlain(v)||'\u00A0';
+  document.getElementById('o-deva').textContent=lineDeva(v)||'\u00A0';
+  document.getElementById('o-eng').textContent=lineEnglish(v)||'\u00A0';
+}
+function reverse(){
+  const v=document.getElementById('rsrc').value;
+  const r=lineFromUrdu(v);
+  const clean=r.latin.replace(/\u2090/g,'a');
+  document.getElementById('r-lat').textContent=r.latin||'\u00A0';
+  document.getElementById('r-eng').textContent=lineEnglish(clean)||'\u00A0';
+  document.getElementById('r-ipa').textContent=v.trim()?'/'+lineIPA(clean)+'/':'\u00A0';
+  const issues=validateAerab(v);
+  document.getElementById('r-issues').innerHTML = issues.length
+    ? issues.slice(0,6).map(i=>'• '+i).join('<br>') : '';
+  document.getElementById('r-note').textContent = r.guessed
+    ? r.guessed+' short vowel'+(r.guessed>1?'s':'')+' marked ₐ — not recorded in the script, replace with the real vowel'
+    : (v.trim()?'Fully recovered — the script carried every vowel.':'');
+}
+function lineFromUrdu(txt){
+  let g=0;
+  const out=txt.split(/(\s+)/).map(w=>{
+    if(/^\s*$/.test(w)) return w;
+    const r=fromUrdu(w); g+=r.guessed; return r.latin;
+  }).join('');
+  return {latin:out, guessed:g};
+}
+function speakReverse(){ speak('',lineFromUrdu(document.getElementById('rsrc').value).latin.replace(/\u2090/g,'a')); }
+function sendToConverter(){
+  document.getElementById('src').value=lineFromUrdu(document.getElementById('rsrc').value).latin.replace(/\u2090/g,'a');
+  convert();
+  document.getElementById('src').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function copyOut(){ navigator.clipboard.writeText(document.getElementById('o-ur').textContent); }
+
+/* ---------- 6. DICTIONARY ---------- */
+/* The Latin is the source of truth. Script and IPA are regenerated on
+   every read, so an engine fix propagates to every entry for free. */
+let DICT=[];
+const KEY='brahui:dict:v2';
+const ARABIC=/[\u0600-\u06FF]/;
+
+async function loadDict(){
+  try{
+    const r=await window.storage.get(KEY);
+    DICT = r ? JSON.parse(r.value) : SEED.slice();
+  }catch(e){ DICT=SEED.slice(); }
+  if(!DICT.length) DICT=SEED.slice();
+  sortDict(); renderDict();
+}
+async function saveDict(){ try{ await window.storage.set(KEY,JSON.stringify(DICT)); }catch(e){} }
+function sortDict(){ DICT.sort((a,b)=>a.en.localeCompare(b.en)); }
+
+function previewEntry(){
+  const sc=document.getElementById('d-sc').value.trim();
+  const brF=document.getElementById('d-br');
+  if(sc && !brF.dataset.touched) brF.value=lineFromUrdu(sc).latin;
+  const br=brF.value.replace(/\u2090/g,'a');
+  document.getElementById('d-eng').textContent=br?lineEnglish(br):'\u00A0';
+}
+document.getElementById('d-br').addEventListener('input',function(){this.dataset.touched='1';});
+
+function addWord(){
+  const en=document.getElementById('d-en').value.trim().normalize('NFC');
+  const sc=document.getElementById('d-sc').value.trim().normalize('NFC');
+  let br=document.getElementById('d-br').value.trim().normalize('NFC').replace(/\u2090/g,'a');
+  if(!br&&sc) br=lineFromUrdu(sc).latin.replace(/\u2090/g,'a');
+  if(!en||!br) return;
+  DICT=DICT.filter(w=>w.en.toLowerCase()!==en.toLowerCase());
+  DICT.push({en,br,src:'MINE'});
+  sortDict();
+  ['d-en','d-br','d-sc'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('d-br').dataset.touched='';
+  document.getElementById('d-eng').textContent='\u00A0';
+  saveDict(); renderDict();
+}
+function addFromReverse(){
+  const sc=document.getElementById('rsrc').value.trim();
+  if(!sc) return;
+  document.getElementById('d-sc').value=sc;
+  document.getElementById('d-br').dataset.touched='';
+  previewEntry();
+  document.getElementById('d-en').focus();
+  document.getElementById('d-en').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function addFromConverter(){
+  const br=document.getElementById('src').value.trim().split(/\s+/)[0];
+  if(!br) return;
+  document.getElementById('d-br').value=br;
+  document.getElementById('d-br').dataset.touched='1';
+  document.getElementById('d-en').focus();
+}
+function delWord(en){ DICT=DICT.filter(w=>w.en!==en); saveDict(); renderDict(); }
+
+const SRCLABEL={
+  UDHR:'UDHR parallel text, Brahui Language Board',
+  TOC :'Ali & Kobayashi 2024, Brahui Texts — author glosses',
+  GRAM:'published grammatical description',
+  CORP:'ILCAA corpus, inferred from context — NEEDS SPEAKER CHECK',
+  MINE:'added by you'
+};
+function renderDict(){
+  const q=(document.getElementById('dfilter').value||'').toLowerCase();
+  const onlyUnchecked=document.getElementById('dunchecked').checked;
+  let rows=DICT.filter(w=>!q||w.en.toLowerCase().includes(q)||w.br.toLowerCase().includes(q));
+  if(onlyUnchecked) rows=rows.filter(w=>w.src==='CORP');
+  const tb=document.querySelector('#dict tbody');
+  document.getElementById('dcount').textContent=
+    `${rows.length} shown · ${DICT.length} total · ${DICT.filter(w=>w.src==='CORP').length} awaiting speaker check`;
+  if(!rows.length){
+    tb.innerHTML=`<tr><td colspan="7"><div class="empty">No match.</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML=`<tr><th>Brahui</th><th>Say as</th><th>Meaning</th><th>Latin</th><th>IPA</th><th>Source</th><th></th></tr>`+
+    rows.map(w=>{
+      const ur=line(w.br,{sukun:false});
+      const chk=w.src==='CORP';
+      return `<tr>
+        <td class="ur" style="font-size:21px">${ur}</td>
+        <td style="font-weight:700;font-size:16px">${lineEnglish(w.br)}</td>
+        <td>${w.en}</td>
+        <td class="lat-cell" style="font-size:15px">${w.br}</td>
+        <td class="ipa">/${lineIPA(w.br)}/</td>
+        <td class="note" title="${SRCLABEL[w.src]||''}" style="width:64px">
+          <span class="tag${chk?' tag-warn':''}">${w.src||'—'}</span></td>
+        <td style="width:120px;white-space:nowrap">
+          <button onclick="speak(${esc(ur)},${esc(w.br)})">Say</button>
+          <button onclick="delWord(${esc(w.en)})">Del</button>
+        </td></tr>`;
+    }).join('');
+}
+function exportDict(){
+  const rows=DICT.map(w=>({
+    en:w.en, brahui:w.br, source:w.src||'MINE',
+    brahui_script:line(w.br,{sukun:false}),
+    urdu_tts_vocalized:line(w.br),
+    ipa:lineIPA(w.br), azure_ipa:lineAzIPA(w.br).join(' '),
+    urdu_plain:linePlain(w.br), devanagari:lineDeva(w.br), english_respell:lineEnglish(w.br)
+  }));
+  dl(JSON.stringify(rows,null,2),'brahui-lexicon.json','application/json');
+}
+/* The sheet you send to a Brahui speaker. Unchecked rows first. */
+function exportReview(){
+  const rows=DICT.filter(w=>w.src==='CORP').concat(DICT.filter(w=>w.src!=='CORP'));
+  const head=['brolikva','brahui_script','our_ipa','our_meaning','source','CORRECT?','fixed_script','fixed_meaning','notes'];
+  const body=rows.map(w=>[w.br,line(w.br,{sukun:false}),lineIPA(w.br),w.en,w.src||'MINE','','','','']);
+  dl([head].concat(body).map(r=>r.join('\t')).join('\n'),'brahui-review-sheet.tsv','text/tab-separated-values');
+}
+function dl(text,name,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; a.click();
+}
+function resetDict(){
+  if(!confirm('Replace the dictionary with the seeded set? Anything you added is lost.')) return;
+  DICT=SEED.slice(); sortDict(); saveDict(); renderDict();
+}
+function bulkAdd(){
+  const t=document.getElementById('bulk').value;
+  t.split(/\n/).forEach(ln=>{
+    const m=ln.split(/\s*[=|\t]\s*/);
+    if(m.length>=2&&m[0].trim()&&m[1].trim()){
+      let a=m[0].trim(), b=m[1].trim();
+      if(ARABIC.test(a)){ const t2=a; a=b; b=t2; }
+      const en=a;
+      const br=(ARABIC.test(b)?lineFromUrdu(b).latin:b).replace(/\u2090/g,'a');
+      DICT=DICT.filter(w=>w.en.toLowerCase()!==en.toLowerCase());
+      DICT.push({en,br,src:'MINE'});
+    }
+  });
+  sortDict();
+  document.getElementById('bulk').value='';
+  saveDict(); renderDict();
+}
+
+/* ---------- 7. PHRASES ---------- */
+function renderPhrases(){
+  document.querySelector('#phrases tbody').innerHTML=
+    `<tr><th>Brahui</th><th>Latin</th><th>Meaning</th><th></th></tr>`+
+    SEED_PHRASES.map(p=>`<tr>
+      <td class="ur" style="font-size:20px;line-height:2.2">${line(p.br,{sukun:false})}</td>
+      <td class="note" style="font-size:13px">${p.br}</td>
+      <td>${p.en}</td>
+      <td style="width:70px"><button onclick="speak('',${esc(p.br)})">Say</button></td>
+    </tr>`).join('');
+}
+renderPhrases();
+
+loadDict();
+convert();
+reverse();
+</script>
+</div>
+</body>
+</html>

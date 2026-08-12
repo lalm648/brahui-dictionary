@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#8e4b34">
+<title>Brahui Dictionary</title>
+<style>
+/* ============================================================
+   MATERIAL 3 — Android dictionary shell
+   Terracotta tonal palette, light + dark, no external assets.
+   ============================================================ */
+:root{
+  --p:#8e4b34; --op:#ffffff; --pc:#ffdbcf; --opc:#380d00;
+  --s:#77574c; --os:#ffffff; --sc:#ffdbcf; --osc:#2c150e;
+  --t:#6c5d2f; --tc:#f6e2a7; --otc:#221b00;
+  --err:#ba1a1a; --pe:#ffdad6;
+  --bg:#fff8f6; --obg:#231917;
+  --surf:#fff8f6; --osurf:#231917;
+  --sv:#f5ded7; --osv:#53433f;
+  --sc1:#fdf1ed; --sc2:#f9eae5; --sc3:#f4e4de; --sc4:#f2e0da; --sc5:#efdad3;
+  --outline:#85736e; --outv:#d8c2bc;
+  --shadow:rgba(60,30,20,.28);
+  --nast:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq","Noto Naskh Arabic","Urdu Typesetting",serif;
+  --sans:Roboto,"Helvetica Neue","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"Roboto Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r-xs:4px; --r-s:8px; --r-m:12px; --r-l:16px; --r-xl:28px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --p:#ffb59d; --op:#552007; --pc:#723519; --opc:#ffdbcf;
+    --s:#e7bfb0; --os:#442a20; --sc:#5d4036; --osc:#ffdbcf;
+    --t:#d9c68d; --tc:#534619; --otc:#f6e2a7;
+    --err:#ffb4ab; --pe:#93000a;
+    --bg:#1a120f; --obg:#f1dfda;
+    --surf:#1a120f; --osurf:#f1dfda;
+    --sv:#53433f; --osv:#d8c2bc;
+    --sc1:#221714; --sc2:#271d19; --sc3:#322723; --sc4:#3d2f2a; --sc5:#48382f;
+    --outline:#a08d87; --outv:#53433f;
+    --shadow:rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:#2a201d;color:var(--obg);
+  font-family:var(--sans);font-size:14px;line-height:1.45;
+  display:flex;align-items:center;justify-content:center;
+}
+/* --- phone frame: real app on mobile, framed device on desktop --- */
+.phone{
+  position:relative;display:flex;flex-direction:column;
+  width:100%;height:100%;max-width:100%;background:var(--bg);overflow:hidden;
+}
+main,.view{max-width:100%;overflow-x:hidden}
+/* tablet / small laptop: keep the phone, framed as a device */
+@media (min-width:760px) and (max-width:1099px){
+  body{padding:24px}
+  .phone{
+    width:412px;height:min(880px,calc(100vh - 48px));
+    border-radius:36px;box-shadow:0 0 0 10px #12100f,0 24px 60px rgba(0,0,0,.55);
+  }
+  .statusbar{padding:12px 26px 2px}   /* clear of the rounded corners */
+  .nav{padding-bottom:18px}
+}
+}
+/* --- status bar --- */
+.statusbar{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:8px 18px 2px;font-size:12px;font-weight:600;color:var(--osurf);
+  background:var(--sc2);letter-spacing:.02em;
+}
+.statusbar .icons{display:flex;gap:5px;align-items:center;opacity:.9}
+/* --- app bar --- */
+.appbar{flex:0 0 auto;background:var(--sc2);padding:4px 4px 10px}
+.appbar-row{display:flex;align-items:center;gap:4px;min-height:48px;padding:0 4px}
+.appbar h1{
+  font-size:20px;font-weight:500;margin:0;flex:1;letter-spacing:.01em;color:var(--osurf);
+}
+.appbar h1 small{display:block;font-size:11px;color:var(--osv);font-weight:400;letter-spacing:.06em;text-transform:uppercase}
+.applogo{
+  width:36px;height:36px;border-radius:50%;background:var(--p);color:var(--op);
+  display:grid;place-items:center;font-family:var(--nast);font-size:19px;flex:0 0 auto;margin:0 6px 0 8px;
+  padding-bottom:4px;
+}
+.iconbtn{
+  width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:var(--osurf);
+  display:grid;place-items:center;cursor:pointer;flex:0 0 auto;position:relative;overflow:hidden;
+}
+.iconbtn:hover{background:color-mix(in srgb,var(--osurf) 8%,transparent)}
+.iconbtn svg{width:22px;height:22px;fill:currentColor}
+/* --- search --- */
+.searchbar{
+  display:flex;align-items:center;gap:8px;margin:2px 8px 0;padding:0 6px 0 14px;
+  height:48px;border-radius:var(--r-xl);background:var(--sc4);color:var(--osurf);
+}
+.searchbar svg{width:20px;height:20px;fill:var(--osv);flex:0 0 auto}
+.searchbar input{
+  flex:1;border:0;background:transparent;color:inherit;font:inherit;font-size:15px;outline:0;min-width:0;
+}
+.searchbar input::placeholder{color:var(--osv)}
+/* --- chips --- */
+.chiprow{display:flex;gap:8px;overflow-x:auto;padding:10px 12px 2px;scrollbar-width:none}
+.chiprow::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;border:1px solid var(--outv);background:transparent;color:var(--osurf);
+  border-radius:var(--r-s);padding:6px 12px;font:inherit;font-size:12.5px;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.chip[aria-pressed="true"]{background:var(--sc);color:var(--osc);border-color:transparent}
+.chip svg{width:16px;height:16px;fill:currentColor}
+.chip .n{opacity:.65;font-weight:400}
+/* --- content --- */
+main{flex:1;overflow-y:auto;overscroll-behavior:contain;background:var(--bg);position:relative}
+main::-webkit-scrollbar{width:6px}
+main::-webkit-scrollbar-thumb{background:var(--outv);border-radius:3px}
+.view{display:none;padding-bottom:110px}
+.view.on{display:block}
+.section-h{
+  font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--p);padding:18px 20px 6px;
+}
+.hint{padding:2px 20px 10px;font-size:12.5px;color:var(--osv);line-height:1.5}
+.hint b{color:var(--osurf)}
+.divider{height:1px;background:var(--outv);margin:6px 20px;opacity:.6}
+/* --- list --- */
+.li{
+  display:flex;align-items:center;gap:14px;padding:11px 16px;cursor:pointer;
+  position:relative;overflow:hidden;border:0;background:transparent;width:100%;text-align:left;
+  color:var(--osurf);font:inherit;
+}
+.li:active{background:var(--sc3)}
+.li:hover{background:var(--sc2)}
+.avatar{
+  width:42px;height:42px;border-radius:50%;background:var(--pc);color:var(--opc);
+  display:grid;place-items:center;flex:0 0 auto;font-family:var(--nast);font-size:20px;padding-bottom:6px;
+}
+.avatar.alt{background:var(--tc);color:var(--otc)}
+.li .body{flex:1;min-width:0}
+.li .ur{display:block;font-family:var(--nast);font-size:21px;line-height:1.85;direction:rtl;
+  unicode-bidi:isolate;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .en{display:block;font-size:13.5px;color:var(--osurf);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .lat{display:block;font-size:12px;color:var(--osv);font-family:var(--mono);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .tail{flex:0 0 auto;display:flex;align-items:center;gap:4px}
+.tag{
+  font-size:9.5px;font-weight:700;letter-spacing:.08em;padding:3px 6px;border-radius:var(--r-xs);
+  background:var(--sv);color:var(--osv);text-transform:uppercase;
+}
+.tag.lsi{background:var(--tc);color:var(--otc)}
+.tag.warn{background:var(--pe);color:var(--err)}
+.tag.mine{background:var(--pc);color:var(--opc)}
+.empty{padding:56px 24px;text-align:center;color:var(--osv);font-size:13px}
+.empty svg{width:46px;height:46px;fill:var(--outv);margin-bottom:10px}
+/* --- cards --- */
+.card{
+  background:var(--sc2);border-radius:var(--r-l);margin:10px 14px;padding:14px 16px;
+}
+.card.out{background:var(--sc3)}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--osv);font-weight:600}
+.ur-big{font-family:var(--nast);font-size:26px;line-height:2.1;direction:rtl;unicode-bidi:isolate;word-break:break-word}
+.mono{font-family:var(--mono);font-size:13px}
+.ipa{font-family:var(--mono);color:var(--p);font-size:13px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:13px;border-bottom:1px solid var(--outv)}
+.kv:last-child{border:0}
+.kv span:first-child{color:var(--osv)}
+.kv span:last-child{text-align:right;max-width:62%}
+/* --- fields --- */
+.field{position:relative;margin:14px}
+.field input,.field textarea,.field select{
+  width:100%;font:inherit;font-size:15px;color:var(--osurf);background:transparent;
+  border:1px solid var(--outline);border-radius:var(--r-xs);padding:15px 14px 7px;outline:0;
+}
+.field textarea{min-height:76px;resize:vertical;line-height:1.5}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--p);border-width:2px;padding:14px 13px 6px}
+.field label{
+  position:absolute;top:-8px;left:10px;background:var(--bg);padding:0 5px;
+  font-size:11px;color:var(--osv);letter-spacing:.03em;
+}
+.field input:focus+label,.field textarea:focus+label{color:var(--p)}
+.field.ur input,.field.ur textarea{font-family:var(--nast);font-size:22px;line-height:2;direction:rtl}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;padding:0 14px 6px}
+.btn{
+  border:0;border-radius:var(--r-xl);padding:10px 20px;font:inherit;font-size:13.5px;font-weight:500;
+  background:var(--p);color:var(--op);cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+}
+.btn.tonal{background:var(--sc);color:var(--osc)}
+.btn.out{background:transparent;color:var(--p);border:1px solid var(--outline)}
+.btn.text{background:transparent;color:var(--p);padding:10px 12px}
+.btn:active{filter:brightness(.94)}
+.btn svg{width:18px;height:18px;fill:currentColor}
+.btn[disabled]{opacity:.45;cursor:default}
+.switchrow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 20px;font-size:14px}
+.switchrow small{display:block;color:var(--osv);font-size:12px}
+.sw{
+  width:50px;height:30px;border-radius:16px;background:var(--sv);border:2px solid var(--outline);
+  position:relative;cursor:pointer;flex:0 0 auto;transition:background .15s;
+}
+.sw::after{content:"";position:absolute;top:5px;left:5px;width:16px;height:16px;border-radius:50%;
+  background:var(--outline);transition:.15s}
+.sw[aria-pressed="true"]{background:var(--p);border-color:var(--p)}
+.sw[aria-pressed="true"]::after{left:25px;width:22px;height:22px;top:2px;background:var(--op)}
+input[type=range]{width:100%;accent-color:var(--p)}
+/* --- fab --- */
+.fab{
+  position:absolute;right:16px;bottom:96px;z-index:6;
+  height:56px;min-width:56px;border-radius:var(--r-l);border:0;background:var(--pc);color:var(--opc);
+  box-shadow:0 4px 10px var(--shadow);cursor:pointer;display:flex;align-items:center;gap:8px;
+  padding:0 18px;font:inherit;font-size:14px;font-weight:600;
+}
+.fab svg{width:24px;height:24px;fill:currentColor}
+.fab:active{filter:brightness(.95)}
+/* --- bottom nav --- */
+.nav{
+  flex:0 0 auto;display:flex;background:var(--sc2);padding:8px 4px 12px;z-index:7;
+  border-top:1px solid var(--outv);
+}
+.nav button{
+  flex:1;border:0;background:transparent;cursor:pointer;color:var(--osv);
+  display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0;font:inherit;font-size:11px;
+}
+.nav .pill{
+  width:56px;height:30px;border-radius:16px;display:grid;place-items:center;transition:background .15s;
+}
+.nav svg{width:22px;height:22px;fill:currentColor}
+.nav button[aria-current="page"]{color:var(--osurf);font-weight:600}
+.nav button[aria-current="page"] .pill{background:var(--sc);color:var(--osc)}
+/* --- scrim, bottom sheet, dialog --- */
+.scrim{
+  position:absolute;inset:0;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;
+  transition:opacity .18s;z-index:8;
+}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;max-height:86%;z-index:9;
+  background:var(--sc1);border-radius:var(--r-xl) var(--r-xl) 0 0;
+  transform:translateY(105%);transition:transform .22s cubic-bezier(.2,0,0,1);
+  display:flex;flex-direction:column;box-shadow:0 -4px 24px var(--shadow);
+}
+.sheet.on{transform:translateY(0)}
+.grabber{width:32px;height:4px;border-radius:2px;background:var(--outv);margin:12px auto 4px;flex:0 0 auto}
+.sheet-body{overflow-y:auto;padding:4px 0 26px}
+.dialog{
+  position:absolute;left:16px;right:16px;top:50%;transform:translateY(-50%) scale(.92);
+  background:var(--sc3);border-radius:var(--r-xl);padding:20px;z-index:10;
+  opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;max-height:88%;overflow-y:auto;
+}
+.dialog.on{opacity:1;pointer-events:auto;transform:translateY(-50%) scale(1)}
+.dialog h2{margin:0 0 4px;font-size:19px;font-weight:500}
+.dialog p{margin:0 0 12px;font-size:13px;color:var(--osv)}
+.dialog .field{margin:16px 0}
+.dialog .field label{background:var(--sc3)}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+/* --- snackbar --- */
+.snack{
+  position:absolute;left:16px;right:16px;bottom:92px;z-index:11;
+  background:var(--osurf);color:var(--surf);border-radius:var(--r-xs);padding:14px 16px;font-size:13.5px;
+  box-shadow:0 3px 12px var(--shadow);opacity:0;transform:translateY(12px);pointer-events:none;
+  transition:.18s;display:flex;align-items:center;gap:12px;
+}
+.snack.on{opacity:1;transform:translateY(0)}
+/* --- misc --- */
+.badge{
+  display:inline-block;font-size:11px;padding:2px 8px;border-radius:var(--r-xs);
+  background:var(--tc);color:var(--otc);font-weight:600;
+}
+a{color:var(--p)}
+code{font-family:var(--mono);font-size:12px;background:var(--sc4);padding:1px 5px;border-radius:3px}
+table.sounds{width:100%;border-collapse:collapse}
+table.sounds td{padding:8px 6px;border-bottom:1px solid var(--outv);vertical-align:middle;font-size:13px}
+table.sounds .k{font-family:var(--mono);font-weight:700;font-size:15px;width:44px}
+table.sounds .u{font-family:var(--nast);font-size:20px;width:52px;text-align:center}
+.grp{
+  background:var(--sc4);color:var(--osurf);font-size:10.5px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;padding:6px 20px;
+}
+.srcline{display:flex;gap:12px;padding:12px 20px;border-bottom:1px solid var(--outv);font-size:13px}
+.srcline .code{font-family:var(--mono);font-weight:700;color:var(--p);flex:0 0 52px}
+.warnbox{
+  margin:12px 14px;padding:12px 14px;border-radius:var(--r-m);background:var(--pe);color:var(--err);
+  font-size:12.5px;line-height:1.5;
+}
+.notebox{
+  margin:12px 14px;padding:12px 14px;border-radius:var(--r-m);background:var(--sc3);
+  font-size:12.5px;line-height:1.55;color:var(--osurf);
+}
+/* ---------------------------------------------------------------
+   DESKTOP: same app, laid out for a real window — navigation rail
+   on the left, list in the middle, the entry as a fixed right pane
+   instead of a bottom sheet.
+   --------------------------------------------------------------- */
+@media (min-width:1100px){
+  body{display:block;padding:0;background:var(--bg)}
+  .phone{
+    width:100%;height:100vh;max-width:none;border-radius:0;box-shadow:none;
+    display:grid;grid-template-columns:96px minmax(0,1fr) 440px;grid-template-rows:auto 1fr;
+    grid-template-areas:"rail bar bar" "rail main sheet";
+  }
+  .phone.no-sheet{grid-template-columns:96px minmax(0,1fr);
+    grid-template-areas:"rail bar" "rail main"}
+  .phone.no-sheet .sheet{display:none}
+  .statusbar{display:none}
+  .appbar{grid-area:bar;display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 28px 12px}
+  .appbar-row{flex:0 0 auto;padding:0;min-height:0;gap:2px}
+  .appbar h1{flex:0 0 auto;font-size:22px}
+  .applogo{width:40px;height:40px;font-size:21px;margin-left:0}
+  .searchbar{flex:1 1 320px;max-width:620px;margin:0}
+  .chiprow{flex:1 1 100%;padding:2px 0 0;overflow-x:visible;flex-wrap:wrap;row-gap:8px}
+  main{grid-area:main;padding:0 12px}
+  .view{padding-bottom:36px;max-width:860px;margin:0 auto}
+  .li{border-radius:var(--r-m);padding:12px 18px}
+  .li.sel{background:var(--sc)}
+  .li.sel .en,.li.sel .ur{color:var(--osc)}
+  .nav{
+    grid-area:rail;flex-direction:column;justify-content:flex-start;gap:6px;
+    border-top:0;border-right:1px solid var(--outv);padding:18px 8px;background:var(--sc1);
+  }
+  .nav button{flex:0 0 auto;font-size:11.5px;gap:4px}
+  .sheet{
+    grid-area:sheet;position:static;transform:none;max-height:none;border-radius:0;
+    border-left:1px solid var(--outv);box-shadow:none;background:var(--sc1);
+  }
+  .grabber{display:none}
+  .sheet-body{padding-top:18px}
+  .scrim.sheet-mode{display:none}
+  .fab{position:fixed;right:472px;bottom:28px}
+  .phone.no-sheet .fab{right:32px}
+  .dialog{left:50%;right:auto;width:min(520px,90vw);transform:translate(-50%,-50%) scale(.94)}
+  .dialog.on{transform:translate(-50%,-50%) scale(1)}
+  .snack{left:128px;right:auto;min-width:340px;max-width:520px;bottom:28px}
+  .card,.field,.btnrow,.notebox,.warnbox{margin-left:18px;margin-right:18px}
+  .sheet .card,.sheet .btnrow,.sheet .notebox,.sheet .warnbox{margin-left:14px;margin-right:14px}
+  .hint,.section-h{padding-left:20px;padding-right:20px}
+  table.sounds td{padding:10px 8px}
+  .empty{padding:80px 24px}
+}
+/* very wide: stop the middle column from sprawling */
+@media (min-width:1600px){
+  .phone{grid-template-columns:96px minmax(0,1fr) 520px}
+  .fab{right:552px}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ─────────── status bar ─────────── -->
+  <div class="statusbar">
+    <span id="clock">9:41</span>
+    <span class="icons">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M2 22h20V2z"/></svg>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 21l11-13c-3-2.6-7-4-11-4S4 5.4 1 8z"/></svg>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M15.7 4H14V2h-4v2H8.3C7.6 4 7 4.6 7 5.3v15.4c0 .7.6 1.3 1.3 1.3h7.4c.7 0 1.3-.6 1.3-1.3V5.3C17 4.6 16.4 4 15.7 4z"/></svg>
+    </span>
+  </div>
+
+  <!-- ─────────── app bar ─────────── -->
+  <header class="appbar">
+    <div class="appbar-row">
+      <div class="applogo">ب</div>
+      <h1 id="screen-title">Brahui Dictionary<small id="screen-sub">براہوئی لغت</small></h1>
+      <button class="iconbtn" data-act="theme-info" title="About the sources">
+        <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18a8 8 0 110-16 8 8 0 010 16zM11 9h2V7h-2v2z"/></svg>
+      </button>
+      <button class="iconbtn" data-act="settings" title="Voice settings">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 7.97v8.06A4.47 4.47 0 0016.5 12zM14 3.23v2.06c2.9.86 5 3.54 5 6.71s-2.1 5.85-5 6.71v2.06c4-.91 7-4.49 7-8.77S18 4.14 14 3.23z"/></svg>
+      </button>
+    </div>
+    <div class="searchbar" id="searchwrap">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 10-.7.7l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 110-9 4.5 4.5 0 010 9z"/></svg>
+      <input id="q" placeholder="Search Brahui, Urdu script or English" autocomplete="off">
+      <button class="iconbtn" data-act="clear-q" title="Clear">
+        <svg viewBox="0 0 24 24"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+      </button>
+    </div>
+    <div class="chiprow" id="chips"></div>
+  </header>
+
+  <!-- ─────────── content ─────────── -->
+  <main id="main">
+
+    <!-- WORDS -->
+    <section class="view on" id="view-words">
+      <div class="hint" id="wordcount"></div>
+      <div id="wordlist"></div>
+    </section>
+
+    <!-- PHRASES -->
+    <section class="view" id="view-phrases">
+      <div class="hint">Published parallel sentences. Connected speech is where a word list stops helping —
+        intonation and vowel reduction only show up in a whole clause.</div>
+      <div id="phraselist"></div>
+    </section>
+
+    <!-- SOUNDS -->
+    <section class="view" id="view-sounds">
+      <div class="hint">Every sound of Brahui with the Urdu letter that carries it. <b>Drill</b> repeats it three
+        times; <b>Once</b> says it in a frame word. <b>ڷ</b> /ɬ/ exists in no TTS voice on earth — the
+        substitution you hear is the voice giving up, not a spelling error.</div>
+      <table class="sounds"><tbody id="soundlist"></tbody></table>
+    </section>
+
+    <!-- TYPE / CONVERT -->
+    <section class="view" id="view-type">
+      <div class="section-h">Latin → Brahui script</div>
+      <div class="field">
+        <textarea id="src" placeholder="baŧŧa">baŧŧa</textarea>
+        <label>Brahui in Brolikva Latin</label>
+      </div>
+      <div class="btnrow">
+        <button class="btn" data-act="speak-src"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Speak</button>
+        <button class="btn tonal" data-act="copy-src">Copy script</button>
+        <button class="btn out" data-act="save-src">Save to dictionary</button>
+      </div>
+      <div class="card out">
+        <h3>Brahui orthography — store this</h3>
+        <div class="ur-big" id="o-ur">&nbsp;</div>
+        <div class="ipa" id="o-ipa" style="margin-top:6px">/ /</div>
+      </div>
+      <div class="card out">
+        <h3>Vocalized for TTS — send this to the voice</h3>
+        <div class="ur-big" id="o-tts">&nbsp;</div>
+      </div>
+      <div class="card out">
+        <h3>Fallbacks</h3>
+        <div class="kv"><span>Diacritic-stripping</span><span class="ur-big" style="font-size:20px" id="o-plain">&nbsp;</span></div>
+        <div class="kv"><span>Devanagari (Hindi voice)</span><span id="o-deva" style="font-size:19px">&nbsp;</span></div>
+        <div class="kv"><span>English respelling</span><span class="mono" id="o-eng" style="font-weight:700">&nbsp;</span></div>
+      </div>
+      <div class="notebox">
+        ASCII accepted: <code>sh</code>=ş · <code>zh</code>=ź · <code>LH</code>=ļ · <code>GH</code>=ģ ·
+        <code>T</code>=ŧ · <code>D</code>=đ · <code>R</code>=ŕ · <code>N</code>=ń ·
+        <code>aa</code>=á · <code>ii</code>=í · <code>uu</code>=ú.<br><br>
+        <b>Not</b> shortcuts, because they destroy real contrasts: <code>tt dd rr</code> are genuine geminates
+        (<code>baŧŧa</code>, <code>izzat</code>) and <code>kh gh ch</code> are aspirated loan consonants
+        (<code>khuriyá</code>, <code>bhallo</code>). For /x/ and /ɣ/ type <code>x</code> and <code>ģ</code>.<br><br>
+        A capital at the <b>start</b> of a word is read as ordinary capitalisation, so <code>Ná</code> is
+        <i>ná</i> and not <i>ńá</i>. Mid-word the shortcuts still hold, so <code>baTTa</code> is
+        <code>baŧŧa</code>. If a word really begins with ŧ ń ş ź ģ ŕ đ ļ, type that letter.
+      </div>
+
+      <div class="section-h">Brahui script → Latin</div>
+      <div class="field ur">
+        <textarea id="rsrc" placeholder="دِیر"></textarea>
+        <label>Paste Perso-Arabic Brahui</label>
+      </div>
+      <div class="btnrow">
+        <button class="btn" data-act="speak-rev"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Speak</button>
+        <button class="btn tonal" data-act="rev-to-src">Send to converter</button>
+        <button class="btn out" data-act="save-rev">Add to dictionary</button>
+      </div>
+      <div class="card out">
+        <div class="kv"><span>Latin</span><span class="mono" id="r-lat" style="font-weight:700;font-size:15px">&nbsp;</span></div>
+        <div class="kv"><span>Say as</span><span class="mono" id="r-eng">&nbsp;</span></div>
+        <div class="kv"><span>IPA</span><span class="ipa" id="r-ipa">&nbsp;</span></div>
+        <div id="r-note" style="font-size:12px;color:var(--p);margin-top:8px"></div>
+        <div id="r-issues" style="font-size:12px;color:var(--err);margin-top:4px"></div>
+      </div>
+    </section>
+
+    <!-- SOURCES / ABOUT -->
+    <section class="view" id="view-about">
+      <div class="section-h">Where every entry comes from</div>
+      <div class="hint">The Latin is the source of truth. Script, IPA, Devanagari and the respelling are
+        regenerated from it on every read, so a fix to the engine propagates to every entry at once.</div>
+      <div id="sourcelist"></div>
+
+      <div class="section-h">Books used</div>
+      <div class="notebox">
+        <b>Grierson, G. A. — Linguistic Survey of India, Vol. IV: Muṇḍā and Dravidian Languages</b> (Calcutta, 1906).
+        Brahui occupies pp. 619–681: sketch grammar, three specimens, and the Standard List of Words and
+        Phrases in the Brahui of Kalat (items 1–241), which is where the <span class="badge">LSI</span>
+        entries and most of the sentences in <b>Phrases</b> were read off.<br>
+        <a href="https://dn790000.ca.archive.org/0/items/in.ernet.dli.2015.42222/2015.42222.Linguistic-Survey-Of-India--Vol-4.pdf" target="_blank" rel="noopener">PDF (66 MB)</a> ·
+        <a href="https://archive.org/details/in.ernet.dli.2015.42222" target="_blank" rel="noopener">archive.org item</a>
+      </div>
+      <div class="notebox">
+        <b>Bray, Denys de S. — The Brahui Language, Part I: Introduction and Grammar</b> (Calcutta, 1909).
+        Used to settle readings the 1906 scan had damaged — <i>khākhar</i> “fire”, <i>tuh</i> “moon”,
+        <i>kātum</i> “head”, <i>bīsh</i> “donkey”, <i>mē</i> “slave” — and for the <span class="badge">BRAY</span> entries.<br>
+        <a href="https://archive.org/details/in.ernet.dli.2015.13132" target="_blank" rel="noopener">archive.org item</a>
+      </div>
+      <div class="notebox">
+        <b>Universal Declaration of Human Rights, Article 1 — Brahui parallel text</b>, Brahui Language Board /
+        University of Balochistan. The engine in this app is validated against it: 11 of 11 words render exactly.
+      </div>
+      <div class="notebox">
+        <b>Ali, Liaquat &amp; Masato Kobayashi — Brahui Texts</b> (ILCAA, Tokyo University of Foreign Studies, 2024).
+        Story titles are glossed by the authors, so those pairings are published; everything else drawn from the
+        corpus is marked <span class="badge">CORP</span> and still needs a speaker.
+      </div>
+
+      <div class="section-h">Data</div>
+      <div class="btnrow">
+        <button class="btn tonal" data-act="export-json">Export JSON</button>
+        <button class="btn tonal" data-act="export-tsv">Review sheet (TSV)</button>
+        <button class="btn out" data-act="reset">Reset to seed</button>
+      </div>
+      <div class="section-h">Bulk add</div>
+      <div class="field">
+        <textarea id="bulk" placeholder="water = دِیر&#10;house = urá&#10;one = asiŧ"></textarea>
+        <label>One “meaning = brahui” per line</label>
+      </div>
+      <div class="btnrow"><button class="btn" data-act="bulk-add">Add all</button></div>
+
+      <div class="section-h">Why the diacritics matter</div>
+      <div class="notebox">
+        Urdu text normally omits short-vowel marks, and a TTS engine guesses them from its own Urdu lexicon —
+        which contains no Brahui words. Every output here is fully vocalized (zabar / zer / pesh / sukun) so the
+        engine reads exactly what is written and the long–short vowel contrast survives. Feed the engine the
+        vocalized string, never the bare consonant skeleton.
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" data-act="add-open" id="fab">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>Add
+  </button>
+
+  <!-- ─────────── bottom nav ─────────── -->
+  <nav class="nav" id="nav">
+    <button data-nav="words" aria-current="page"><span class="pill">
+      <svg viewBox="0 0 24 24"><path d="M18 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zM8 4h3v7l-1.5-1L8 11V4z"/></svg>
+    </span>Words</button>
+    <button data-nav="phrases"><span class="pill">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+    </span>Phrases</button>
+    <button data-nav="sounds"><span class="pill">
+      <svg viewBox="0 0 24 24"><path d="M7 18h2V6H7v12zm4 4h2V2h-2v20zm-8-8h2v-4H3v4zm12 4h2V6h-2v12zm4-4h2v-4h-2v4z"/></svg>
+    </span>Sounds</button>
+    <button data-nav="type"><span class="pill">
+      <svg viewBox="0 0 24 24"><path d="M20 5H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zM11 8h2v2h-2V8zM8 8h2v2H8V8zM5 8h2v2H5V8zm3 5H5v-2h3v2zm8 3H8v-2h8v2zm0-3h-2v-2h2v2zm3 0h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
+    </span>Type</button>
+    <button data-nav="about"><span class="pill">
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+    </span>Sources</button>
+  </nav>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet"><div class="grabber"></div><div class="sheet-body" id="sheet-body"></div></div>
+  <div class="dialog" id="dialog"></div>
+  <div class="snack" id="snack"></div>
+</div>
+
+<script>
+/* ============================================================
+   1. ENGINE — Brahui ⇄ Perso-Arabic, IPA, Devanagari, respelling
+   Validated against the published Brahui orthography of UDHR
+   Art. 1 (Brahui Language Board / Omniglot): 11/11 words exact.
+   Authorities: Brahui alphabet incl. ڷ = /ɬ/ and ں = /ɳ/;
+   Brolikva romanisation (Brahui Language Board, Univ. of
+   Balochistan); Krishnamurti 2003 / Elfenbein 1997 inventory.
+   ============================================================ */
+const C = {
+  'b':['ب','b','as in bat'],            'p':['پ','p','as in pat'],
+  't':['ت','t̪','dental — tongue on the back of the teeth'],
+  'ŧ':['ٹ','ʈ','retroflex — tongue curled back'],
+  'd':['د','d̪','dental'],              'đ':['ڈ','ɖ','retroflex'],
+  'k':['ک','k','as in kit'],            'g':['گ','g','as in go'],
+  'f':['ف','f','as in fan'],            'v':['و','ʋ','w/v — between want and van'],
+  's':['س','s','as in sat'],            'z':['ز','z','as in zoo'],
+  'ş':['ش','ʃ','sh in ship'],           'ź':['ژ','ʒ','s in measure'],
+  'x':['خ','x','ch in Scottish loch'],  'ģ':['غ','ɣ','voiced throat scrape'],
+  'h':['ہ','h','as in hat'],            'c':['چ','tʃ','ch in church'],
+  'j':['ج','dʒ','j in judge'],          'm':['م','m','as in man'],
+  'n':['ن','n̪','dental'],              'ń':['ں','ɳ','retroflex n — NOT plain n'],
+  'l':['ل','l','as in let'],            'ļ':['ڷ','ɬ','voiceless lateral fricative — Welsh Ll, unique to Brahui'],
+  'r':['ر','ɾ','tapped, Spanish pero'], 'ŕ':['ڑ','ɽ','retroflex flap — never word-initial'],
+  'y':['ی','j','as in yes'],            "'":['ع','ʔ','glottal stop — southern dialect for northern h']
+};
+/* Aspirates are not native phonemes, but ~55% of the lexicon is
+   Perso-Arabic / Indo-Aryan loan material and the corpus is full
+   of them (bhallo, khuriyá, phul, jhal, đhaggí, thaŕa). */
+const ASPIRATE = {
+  'bh':['بھ','bʱ'],'ph':['پھ','pʰ'],'th':['تھ','t̪ʰ'],'ŧh':['ٹھ','ʈʰ'],
+  'dh':['دھ','d̪ʱ'],'đh':['ڈھ','ɖʱ'],'kh':['کھ','kʰ'],'gh':['گھ','gʱ'],
+  'ch':['چھ','tʃʰ'],'jh':['جھ','dʒʱ'],'ŕh':['ڑھ','ɽʱ']
+};
+for (const k in ASPIRATE) C[k] = [ASPIRATE[k][0], ASPIRATE[k][1], 'aspirated — loan phoneme'];
+
+/* Brahui has NO short /e o/ (Krishnamurti 2003:118). /ai au/ are phonemic. */
+const V = {
+  'a' :{ini:'اَ' ,mid:'َ'  ,fin:'ہ'  ,ipa:'ə' ,note:'short — u in cut'},
+  'i' :{ini:'اِ' ,mid:'ِ'  ,fin:'ی'  ,ipa:'ɪ' ,note:'short — i in sit'},
+  'u' :{ini:'اُ' ,mid:'ُ'  ,fin:'و'  ,ipa:'ʊ' ,note:'short — oo in book'},
+  'á' :{ini:'آ'  ,mid:'َا' ,fin:'ا'  ,ipa:'aː',note:'long — a in father'},
+  'í' :{ini:'اِی',mid:'ِی' ,fin:'ی'  ,ipa:'iː',note:'long — ee in see'},
+  'ú' :{ini:'اُو',mid:'ُو' ,fin:'و'  ,ipa:'uː',note:'long — oo in food'},
+  'e' :{ini:'اے' ,mid:'ے'       ,fin:'ے'  ,ipa:'eː',note:'long — pure ay, no glide'},
+  'o' :{ini:'او' ,mid:'و'       ,fin:'و'  ,ipa:'oː',note:'long — pure o, no glide'},
+  'ai':{ini:'اَی',mid:'َی' ,fin:'َے' ,ipa:'əɪ̯',note:'diphthong — eye'},
+  'au':{ini:'اَو',mid:'َو' ,fin:'َو' ,ipa:'əʊ̯',note:'diphthong — how'}
+};
+const SUKUN='ْ', SHADDA='ّ';
+const ALIAS={
+  'ḍ':'đ','ġ':'ģ','ḷ':'ļ','ż':'ź','ṭ':'ŧ','ṛ':'ŕ','ṇ':'ń','ṣ':'ş',
+  'ā':'á','ī':'í','ū':'ú','ē':'e','ō':'o',
+  'lh':'ļ','LH':'ļ','L':'ļ','sh':'ş','SH':'ş','S':'ş','zh':'ź','ZH':'ź','Z':'ź',
+  'GH':'ģ','G':'ģ','X':'x','T':'ŧ','D':'đ','R':'ŕ','N':'ń',
+  'aa':'á','ii':'í','uu':'ú','AA':'á','II':'í','UU':'ú','A':'á','I':'í','U':'ú',
+  'ð':'đ','ţ':'ŧ','w':'v'
+};
+const KEYS=[...Object.keys(ALIAS),...Object.keys(C),...Object.keys(V)].sort((a,b)=>b.length-a.length);
+
+/* A word-initial capital is ordinary capitalisation (Ná, Ode, Muccá), not an
+   ASCII shortcut — otherwise "Ná" tokenised as ń-á and came out ںَا. Mid-word
+   capitals keep their shortcut meaning, so baTTa still gives baŧŧa. */
+function decap(word){
+  return (/^[A-Z]/.test(word) && !/^[A-Z][A-Z]/.test(word))
+    ? word[0].toLowerCase()+word.slice(1) : word;
+}
+function tokenize(word){
+  word=decap(word.normalize('NFC'));
+  const out=[]; let i=0;
+  while(i<word.length){
+    let hit=null;
+    for(const k of KEYS){ if(word.startsWith(k,i)){hit=k;break;} }
+    if(hit){ out.push(ALIAS[hit]||hit); i+=hit.length; }
+    else { out.push(word[i]); i++; }
+  }
+  return out;
+}
+/* opts.sukun — true for TTS output, false for stored orthography.
+   Native Brahui text does not write sukun; Urdu front-ends need it. */
+function toUrdu(word,opts){
+  const sukun = !opts || opts.sukun !== false;
+  const t=tokenize(word); let s='';
+  for(let i=0;i<t.length;i++){
+    const tk=t[i], nx=t[i+1], prev=t[i-1];
+    if(C[tk]){
+      if(prev===tk) s+=SHADDA;              // geminate = shadda, not letter+sukun
+      else s+=C[tk][0];
+      if(nx&&V[nx]){
+        const atEnd=(i+2>=t.length);
+        s += (atEnd && V[nx].fin && 'aiu'.includes(nx)) ? V[nx].fin : V[nx].mid;
+        i++;
+      } else if(sukun && nx!==tk) s+=SUKUN;  // no sukun before a geminate
+    } else if(V[tk]){
+      if(s==='') s+=V[tk].ini;
+      else {
+        /* Vowel on vowel. If this one opens with a haraka it would stack on the
+           mark already sitting on the consonant (juán came out جَُان), so write
+           the hiatus with a carrier letter the way Urdu does: جُوان, مادِیان. */
+        const stacks = prev && V[prev] && /^[ً-ْ]/.test(V[tk].mid);
+        if(stacks) s += ({i:'ی',u:'و',a:'ا'})[prev] || '';
+        s += V[tk].mid;
+      }
+    } else s+=tk;
+  }
+  return s;
+}
+function toIPA(word){ return tokenize(word).map(t=>C[t]?C[t][1]:(V[t]?V[t].ipa:t)).join(''); }
+const PUNCT={'?':'؟',',':'،',';':'؛'};
+function line(txt,opts){
+  return txt.split(/(\s+|-)/).map(w=>/^[\s-]*$/.test(w)?w:toUrdu(w,opts)).join('')
+            .replace(/[?,;]/g,ch=>PUNCT[ch]);
+}
+function lineIPA(txt){ return txt.split(/(\s+|-)/).map(w=>/^[\s-]*$/.test(w)?w:toIPA(w)).join(''); }
+
+/* Azure <phoneme alphabet="ipa"> — plain symbols only, no combining marks. */
+const AZIPA={
+  b:'b',p:'p',t:'t','ŧ':'ʈ',d:'d','đ':'ɖ',k:'k',g:'g',f:'f',v:'ʋ',
+  s:'s',z:'z','ş':'ʃ','ź':'ʒ',x:'x','ģ':'ɣ',h:'h',c:'tʃ',j:'dʒ',
+  m:'m',n:'n','ń':'ɳ',l:'l','ļ':'ɬ',r:'ɾ','ŕ':'ɽ',y:'j',"'":'ʔ',
+  a:'ə','á':'aː',i:'ɪ','í':'iː',u:'ʊ','ú':'uː',e:'eː',o:'oː',ai:'aɪ',au:'aʊ',
+  bh:'b',ph:'pʰ',th:'tʰ','ŧh':'ʈʰ',dh:'d','đh':'ɖ',kh:'kʰ',gh:'g',ch:'tʃʰ',jh:'dʒ','ŕh':'ɽ'
+};
+function toAzIPA(word){ return tokenize(word).map(t=>AZIPA[t]||'').join(''); }
+function lineAzIPA(txt){ return txt.split(/\s+/).filter(Boolean).map(toAzIPA); }
+
+/* ---------- reverse: Perso-Arabic → Brolikva ---------- */
+const RC={
+  'ب':'b','پ':'p','ت':'t','ٹ':'ŧ','د':'d','ڈ':'đ','ک':'k','ك':'k','گ':'g',
+  'ف':'f','س':'s','ص':'s','ث':'s','ز':'z','ذ':'z','ض':'z','ظ':'z',
+  'ش':'ş','ژ':'ź','خ':'x','غ':'ģ','ہ':'h','ح':'h','ه':'h',
+  'چ':'c','ج':'j','م':'m','ن':'n','ں':'ń','ل':'l','ڷ':'ļ','ر':'r','ڑ':'ŕ',
+  'ط':'t','ع':"'",'ء':"'",'ق':'k'
+};
+const RMARK={'َ':'a','ِ':'i','ُ':'u','ْ':'','ٰ':'á'};
+const SCRIPT_FIX={'ك':'ک','ي':'ی','ى':'ی',
+  'ة':'ہ','ه':'ہ','ۃ':'ہ','ؤ':'و','ئ':'ی'};
+function normalizeScript(t){
+  return [...t.normalize('NFC')].map(c=>SCRIPT_FIX[c]||c).join('')
+    .replace(/[​-‏‪-‮﻿]/g,'');
+}
+function fromUrdu(word){
+  word=normalizeScript(word);
+  const ch=[...word];
+  let out=[], guessed=0;
+  for(let i=0;i<ch.length;i++){
+    const c=ch[i], nx=ch[i+1], prev=out[out.length-1];
+    /* word-initial alif is a vowel CARRIER, not a vowel */
+    if(i===0 && c==='ا'){
+      if(nx && RMARK[nx]!==undefined){ continue; }
+      if(nx==='ی'){ out.push('í'); i++; continue; }
+      if(nx==='و'){ out.push('ú'); i++; continue; }
+      if(nx==='ے'){ out.push('e');  i++; continue; }
+      out.push('a'); continue;
+    }
+    /* shadda geminates the preceding CONSONANT; NFC sorts damma before
+       shadda, so walk back past any vowel token first */
+    if(c===SHADDA){
+      const vowels=['a','á','i','í','u','ú','e','o','ai','au'];
+      let k=out.length-1;
+      while(k>=0 && vowels.includes(out[k])) k--;
+      if(k>=0) out.splice(k+1,0,out[k]);
+      continue;
+    }
+    if(RMARK[c]!==undefined){
+      const m=RMARK[c];
+      if(m==='a'&&nx==='ا'){ out.push('á'); i++; }
+      else if(m==='a'&&nx==='ی'){ out.push('ai'); i++; }
+      else if(m==='a'&&nx==='و'){ out.push('au'); i++; }
+      else if(m==='i'&&nx==='ی'){ out.push('í'); i++; }
+      else if(m==='u'&&nx==='و'){ out.push('ú'); i++; }
+      else if(m) out.push(m);
+      continue;
+    }
+    if(c==='ھ'){ if(prev&&C[prev+'h']) out[out.length-1]=prev+'h'; continue; }
+    if(c==='آ'){ out.push('á'); continue; }
+    if(c==='ا'){ out.push('á'); continue; }
+    if(c==='ے'){ out.push('e'); continue; }
+    if(c==='ی'||c==='ي'){ out.push((out.length===0||'aáiíuúeo'.includes(prev))?'y':'í'); continue; }
+    if(c==='و'){ out.push((out.length===0||'aáiíuúeo'.includes(prev))?'v':'o'); continue; }
+    if(RC[c]!==undefined){ if(RC[c]) out.push(RC[c]); continue; }
+  }
+  /* only guess missing short vowels when the writer supplied NO aerab */
+  const HARAKA=/[ً-ْٰ]/;
+  const vocalized = HARAKA.test(word);
+  let res='';
+  const isV=v=>['a','á','i','í','u','ú','e','o','ai','au'].includes(v);
+  for(let i=0;i<out.length;i++){
+    const t=out[i], nx=out[i+1];
+    res+=t;
+    if(!vocalized && t&&!isV(t)&&nx&&!isV(nx)&&t!==nx){ res+='ₐ'; guessed++; }
+  }
+  return {latin:res, guessed};
+}
+function lineFromUrdu(txt){
+  let g=0;
+  const out=txt.split(/(\s+)/).map(w=>{
+    if(/^\s*$/.test(w)) return w;
+    const r=fromUrdu(w); g+=r.guessed; return r.latin;
+  }).join('');
+  return {latin:out, guessed:g};
+}
+
+/* ---------- Devanagari: most browsers ship no Urdu voice, but nearly
+   all ship Google हिन्दी. Hindi carries the dental/retroflex contrast,
+   the aspirates and vowel length. Only /ɬ/ is lost. ---------- */
+const DC={
+  b:'ब',p:'प',t:'त','ŧ':'ट',d:'द','đ':'ड',k:'क',g:'ग',f:'फ़',v:'व',
+  s:'स',z:'ज़','ş':'श','ź':'ज़',x:'ख़','ģ':'ग़',h:'ह',c:'च',j:'ज',
+  m:'म',n:'न','ń':'ण',l:'ल','ļ':'ल',r:'र','ŕ':'ड़',y:'य',"'":'',
+  bh:'भ',ph:'फ',th:'थ','ŧh':'ठ',dh:'ध','đh':'ढ',kh:'ख',gh:'घ',ch:'छ',jh:'झ','ŕh':'ढ़'
+};
+const DV={
+  a:{ind:'अ',m:''},'á':{ind:'आ',m:'ा'},i:{ind:'इ',m:'ि'},'í':{ind:'ई',m:'ी'},
+  u:{ind:'उ',m:'ु'},'ú':{ind:'ऊ',m:'ू'},e:{ind:'ए',m:'े'},o:{ind:'ओ',m:'ो'},
+  ai:{ind:'ऐ',m:'ै'},au:{ind:'औ',m:'ौ'}
+};
+const VIRAMA='्';
+function toDeva(word){
+  const t=tokenize(word); let s='';
+  for(let i=0;i<t.length;i++){
+    const tk=t[i], nx=t[i+1];
+    if(DC[tk]!==undefined){ s+=DC[tk]; if(nx&&DV[nx]){ s+=DV[nx].m; i++; } else s+=VIRAMA; }
+    else if(DV[tk]) s+=(s===''?DV[tk].ind:DV[tk].m);
+  }
+  return s;
+}
+function lineDeva(t){ return t.split(/\s+/).filter(Boolean).map(toDeva).join(' '); }
+
+/* English respelling: en-IN is the best host — it realises English t/d
+   as retroflex, which is what Brahui needs. */
+const ENG={
+  b:'b',p:'p',t:'t','ŧ':'t',d:'d','đ':'d',k:'k',g:'g',f:'f',v:'w',
+  s:'s',z:'z','ş':'sh','ź':'zh',x:'kh','ģ':'gh',h:'h',c:'ch',j:'j',
+  m:'m',n:'n','ń':'n',l:'l','ļ':'hl',r:'r','ŕ':'r',y:'y',"'":'',
+  a:'uh','á':'aa',i:'ih','í':'ee',u:'oo','ú':'ooh',e:'ay',o:'oh',ai:'y',au:'ow',
+  bh:'bh',ph:'ph',th:'th','ŧh':'th',dh:'dh','đh':'dh',kh:'kh',gh:'gh',ch:'chh',jh:'jh','ŕh':'rh'
+};
+const ENG_GAPS=['x','ģ','ļ',"'"];
+function toEnglish(w){ return tokenize(w).map(t=>ENG[t]!==undefined?ENG[t]:t).join(''); }
+function lineEnglish(t){ return t.split(/\s+/).filter(Boolean).map(toEnglish).join(' '); }
+
+/* Diacritic-stripping front ends still honour real letters, so long
+   vowels survive through mater lectionis. Short vowels stay unwritten. */
+const VPLAIN={
+  'a':{ini:'ا',mid:'',fin:'ہ'}, 'i':{ini:'ا',mid:'',fin:'ی'}, 'u':{ini:'ا',mid:'',fin:'و'},
+  'á':{ini:'آ',mid:'ا',fin:'ا'},'í':{ini:'ای',mid:'ی',fin:'ی'},'ú':{ini:'او',mid:'و',fin:'و'},
+  'e':{ini:'اے',mid:'ے',fin:'ے'},'o':{ini:'او',mid:'و',fin:'و'},
+  'ai':{ini:'اَی',mid:'ی',fin:'ے'},'au':{ini:'اَو',mid:'و',fin:'و'}
+};
+function toUrduPlain(word){
+  const t=tokenize(word); let s='';
+  for(let i=0;i<t.length;i++){
+    const tk=t[i];
+    if(C[tk]) s+=C[tk][0];
+    else if(VPLAIN[tk]){ const v=VPLAIN[tk]; s+=(s===''?v.ini:(i===t.length-1?v.fin:v.mid)); }
+  }
+  return s||word;
+}
+function linePlain(t){ return t.split(/\s+/).filter(Boolean).map(toUrduPlain).join(' '); }
+function stripMarks(s){ return s.replace(/[ً-ْ]/g,''); }
+
+const HARAKA_SET='ًٌٍَُِّْٰ';
+function validateAerab(t){
+  const out=[];
+  for(const w of normalizeScript(t).split(/\s+/).filter(Boolean)){
+    const ch=[...w]; let marked=0,cons=0;
+    for(let i=0;i<ch.length;i++){
+      const c=ch[i], prev=ch[i-1];
+      if(HARAKA_SET.includes(c)){
+        marked++;
+        if(i===0) out.push(w+': a vowel mark opens the word — it must follow a letter');
+        else if(HARAKA_SET.includes(prev)&&prev!=='ّ') out.push(w+': two vowel marks in a row');
+      } else if(RC[c]!==undefined||'اآوی ےں'.includes(c)) cons++;
+    }
+    if(cons>1&&marked===0) out.push(w+': no aerab at all — short vowels unrecoverable');
+  }
+  return out;
+}
+
+/* ============================================================
+   2. LEXICON
+   Every entry carries a source tag. Nothing here is invented.
+     LSI   Grierson, Linguistic Survey of India IV (1906),
+           Standard List of Words and Phrases, Brahui of Kalat
+           (items 1–241, pp. 646–681). `ref` is the item number,
+           `lsi` the romanisation as printed on the page.
+     BRAY  Bray, The Brahui Language, Part I (1909)
+     UDHR  UDHR Art. 1, Brahui Language Board parallel text
+     TOC   Ali & Kobayashi 2024, Brahui Texts — author glosses
+     GRAM  published grammatical description
+     CORP  ILCAA corpus, meaning inferred from context —
+           NEEDS SPEAKER CONFIRMATION
+     MINE  added by you
+   `br` is Brolikva Latin and is the source of truth: script,
+   IPA, Devanagari and respelling are regenerated from it.
+   `check:true` marks a reading or gloss a speaker should confirm.
+   ============================================================ */
+const SEED = [
+/* ---- pronouns & deixis ---- */
+{br:'ii',en:'I',src:'GRAM'},
+{br:'nan',en:'we',src:'GRAM'},
+{br:'nii',en:'you (singular)',src:'GRAM'},
+{br:'num',en:'you (plural)',src:'GRAM'},
+{br:'o',en:'he, she, it; that',src:'GRAM'},
+{br:'daa',en:'this',src:'GRAM'},
+{br:'ten',en:'self, own',src:'GRAM'},
+{br:'ant',en:'what',src:'GRAM'},
+{br:'amar',en:'how',src:'GRAM'},
+{br:'araa',en:'where',src:'CORP',check:true},
+{br:'har.kas',en:'everyone',src:'CORP',check:true},
+/* ---- numerals: 1–3 Dravidian, 4+ Iranian loans ---- */
+{br:'asiŧ',en:'one',src:'GRAM'},
+{br:'iraŧ',en:'two',src:'GRAM'},
+{br:'musiŧ',en:'three',src:'GRAM'},
+{br:'cár',en:'four',src:'GRAM'},
+{br:'panc',en:'five',src:'GRAM'},
+{br:'şaş',en:'six',src:'GRAM'},
+{br:'haft',en:'seven',src:'GRAM'},
+{br:'haşt',en:'eight',src:'GRAM'},
+{br:'bíst',en:'twenty',src:'CORP',check:true},
+{br:'panjá',en:'fifty',src:'CORP',check:true},
+{br:'sad',en:'hundred',src:'CORP',check:true},
+/* ---- the verb “to be” ---- */
+{br:'uŧ',en:'I am',src:'GRAM'},
+{br:'un',en:'we are',src:'GRAM'},
+{br:'us',en:'you are',src:'GRAM'},
+{br:'e',en:'is',src:'GRAM'},
+{br:'as',en:'was',src:'GRAM'},
+{br:'assuŧ',en:'I was',src:'GRAM'},
+{br:'affaŧ',en:'I am not',src:'GRAM'},
+{br:'aff',en:'is not',src:'GRAM'},
+/* ---- core verbs ---- */
+{br:'bar',en:'to come',src:'GRAM'},
+{br:'bassuŧ',en:'I came',src:'GRAM'},
+{br:'hin',en:'to go',src:'CORP',check:true},
+{br:'kun',en:'to eat, to drink',src:'CORP',check:true},
+{br:'xan',en:'to see',src:'CORP',check:true},
+{br:'pár',en:'to say',src:'CORP',check:true},
+{br:'hal',en:'to take',src:'CORP',check:true},
+{br:'tis',en:'gave',src:'CORP',check:true},
+{br:'mas',en:'became',src:'CORP',check:true},
+{br:'kar',en:'to do, to make',src:'CORP',check:true},
+{br:'hur',en:'to look, to think',src:'CORP',check:true},
+{br:'tuus',en:'to sit',src:'CORP',check:true},
+{br:'xácing',en:'to sleep, to lie down',src:'CORP',check:true},
+{br:'xuáf',en:'to graze, to tend',src:'CORP',check:true},
+{br:'harf',en:'to carry, to take away',src:'CORP',check:true},
+{br:'tamm',en:'to fall, to happen',src:'CORP',check:true},
+{br:'kaşş',en:'to pull out, to draw',src:'CORP',check:true},
+{br:'biŧ',en:'to throw',src:'CORP',check:true},
+{br:'vadí',en:'born',src:'UDHR'},
+{br:'massuno',en:'they became',src:'UDHR'},
+/* ---- people & kinship ---- */
+{br:'bandaģ',en:'man, person',src:'TOC'},
+{br:'insán',en:'human being',src:'UDHR'},
+{br:'musáfir',en:'traveller',src:'TOC'},
+{br:'şohán',en:'shepherd',src:'TOC'},
+{br:'khuriyá',en:'goatherd',src:'TOC'},
+{br:'ģaríb',en:'poor man',src:'TOC'},
+{br:'kaedí',en:'prisoner',src:'TOC'},
+{br:'kumakkár',en:'protector',src:'TOC'},
+{br:'buzurg',en:'elder, holy man',src:'TOC'},
+{br:'baadşá',en:'king',src:'CORP',check:true},
+{br:'maar',en:'son, child',src:'CORP',check:true},
+{br:'masiŕ',en:'daughter',src:'CORP',check:true},
+{br:'zaaífa',en:'wife, woman',src:'CORP',check:true},
+{br:'bíbí',en:'lady, wife',src:'CORP',check:true},
+{br:'lumma',en:'mother',src:'CORP',check:true},
+{br:'báva',en:'father',src:'CORP',check:true},
+{br:'ílum',en:'friend, brother',src:'CORP',check:true},
+{br:'ílumí',en:'brotherhood, friendship',src:'UDHR'},
+{br:'iilumk',en:'friends, brothers',src:'CORP',check:true},
+{br:'vazír',en:'minister',src:'CORP',check:true},
+{br:'kaazí',en:'judge',src:'CORP',check:true},
+{br:'baxxál',en:'merchant, shopkeeper',src:'CORP',check:true},
+{br:'maxlúk',en:'people, crowd',src:'CORP',check:true},
+/* ---- animals ---- */
+{br:'xazm',en:'deer',src:'TOC'},
+{br:'xáxo',en:'crow',src:'TOC'},
+{br:'şok',en:'fox',src:'TOC'},
+{br:'bođ',en:'louse',src:'TOC'},
+{br:'hullí',en:'horse',src:'TOC'},
+{br:'meļ',en:'sheep, goats',src:'CORP',check:true},
+{br:'khur',en:'flock',src:'CORP',check:true},
+{br:'đhaggí',en:'cow',src:'CORP',check:true},
+{br:'dúşa',en:'snake',src:'CORP',check:true},
+{br:'nariyán',en:'stallion',src:'CORP',check:true},
+/* ---- body ---- */
+{br:'ust',en:'heart, mind',src:'GRAM'},
+{br:'kaaŧum',en:'head',src:'CORP'},
+{br:'xan',en:'eye',src:'CORP'},
+{br:'bá',en:'mouth',src:'GRAM'},
+{br:'mon',en:'face, front',src:'CORP'},
+{br:'nat',en:'ear',src:'CORP',check:true,
+ note:'LSI IV No. 33 gives nat “foot” and No. 38 xaf “ear”. This corpus-inferred gloss is probably a mis-reading — see the LSI entries.'},
+{br:'rán',en:'thigh, leg',src:'CORP',check:true},
+{br:'suu',en:'meat, flesh',src:'CORP',check:true},
+{br:'jaan',en:'body, life',src:'CORP',check:true},
+/* ---- world & things ---- */
+{br:'diir',en:'water',src:'CORP'},
+{br:'urá',en:'house',src:'CORP'},
+{br:'şár',en:'town, city',src:'CORP',check:true},
+{br:'mulk',en:'country',src:'CORP',check:true},
+{br:'jangal',en:'forest',src:'CORP',check:true},
+{br:'draxt',en:'tree',src:'CORP',check:true},
+{br:'buuc',en:'mountain',src:'CORP',check:true},
+{br:'daryáb',en:'river, sea',src:'CORP',check:true},
+{br:'baaģ',en:'garden',src:'CORP',check:true},
+{br:'xolum',en:'wheat',src:'TOC'},
+{br:'kaŕo',en:'grain',src:'TOC'},
+{br:'iraģ',en:'food, bread',src:'CORP'},
+{br:'puc',en:'clothes',src:'CORP',check:true},
+{br:'xíisun',en:'gold',src:'CORP'},
+{br:'píihun',en:'silver',src:'CORP',check:true},
+{br:'ruppai',en:'rupee',src:'CORP'},
+{br:'kaldár',en:'coin, rupee',src:'CORP',check:true},
+{br:'giŕá',en:'thing',src:'CORP'},
+{br:'thaŕa',en:'porch',src:'TOC'},
+/* ---- time ---- */
+{br:'de',en:'day',src:'CORP'},
+{br:'sob',en:'morning',src:'CORP',check:true},
+{br:'şám',en:'evening',src:'CORP',check:true},
+{br:'nan',en:'night',src:'CORP',check:true},
+{br:'pagga',en:'tomorrow',src:'CORP'},
+{br:'tuu',en:'month',src:'CORP',check:true},
+{br:'saal',en:'year',src:'CORP'},
+{br:'vaxt',en:'time',src:'CORP'},
+{br:'must',en:'before, formerly',src:'CORP',check:true},
+{br:'aeno',en:'now',src:'CORP',check:true},
+/* ---- qualities & abstractions ---- */
+{br:'muccá',en:'all',src:'UDHR'},
+{br:'ájo',en:'free',src:'UDHR'},
+{br:'izzat',en:'dignity, honour',src:'UDHR'},
+{br:'rid',en:'right, way',src:'UDHR'},
+{br:'barebar',en:'equal',src:'UDHR'},
+{br:'puhí',en:'reason, understanding',src:'UDHR'},
+{br:'dalíl',en:'conscience, argument',src:'UDHR'},
+{br:'juán',en:'good',src:'CORP'},
+{br:'bhallo',en:'big, great',src:'CORP'},
+{br:'cunk',en:'small',src:'CORP'},
+{br:'baaz',en:'much, many',src:'CORP'},
+{br:'kam',en:'little, few',src:'CORP'},
+{br:'xuş',en:'happy',src:'CORP'},
+{br:'tuģ',en:'dream',src:'TOC'},
+{br:'bahá',en:'price',src:'TOC'},
+{br:'mehr',en:'love',src:'TOC'},
+{br:'baxt',en:'luck, fortune',src:'TOC'},
+{br:'bevas',en:'powerless, helpless',src:'TOC'},
+{br:'rág',en:'tune, drama',src:'TOC'},
+{br:'kissa',en:'story',src:'CORP'},
+{br:'havál',en:'news, account',src:'CORP'},
+/* ---- particles & function words ---- */
+{br:'ná',en:'of (genitive)',src:'UDHR'},
+{br:'aŧ',en:'in, at',src:'UDHR'},
+{br:'ton',en:'with',src:'UDHR'},
+{br:'elo',en:'other, another',src:'UDHR'},
+{br:'o',en:'and',src:'UDHR'},
+{br:'pen',en:'other, again',src:'CORP'},
+{br:'rand',en:'after, behind',src:'CORP'},
+{br:'guŕá',en:'then, so',src:'CORP'},
+{br:'magar',en:'but',src:'CORP'},
+{br:'aga',en:'if',src:'CORP'},
+{br:'hao',en:'yes',src:'CORP'},
+{br:'na',en:'no, not',src:'CORP'},
+
+/* ============ LSI IV (1906), Brahui of Kalat ============ */
+/* numerals */
+{br:'noh',en:'nine',src:'LSI',ref:'9',lsi:'Noh'},
+{br:'dah',en:'ten',src:'LSI',ref:'10',lsi:'Dah'},
+{br:'panjáh',en:'fifty',src:'LSI',ref:'12',lsi:'Pañjāh'},
+/* pronouns */
+{br:'kaná',en:'my, of me',src:'LSI',ref:'15–16',lsi:'Kanā'},
+{br:'naná',en:'our, of us',src:'LSI',ref:'18–19',lsi:'Nanā'},
+{br:'ná',en:'thy, of thee',src:'LSI',ref:'21–22',lsi:'Nā'},
+{br:'numá',en:'your, of you',src:'LSI',ref:'24–25',lsi:'Numā'},
+{br:'e',en:'he, she, it (variant of o)',src:'LSI',ref:'26',lsi:'Ē, or ō'},
+{br:'o-ná',en:'his, of him',src:'LSI',ref:'27–28',lsi:'Ē-nā, or ō-nā'},
+{br:'ofk',en:'they',src:'LSI',ref:'29',lsi:'Ēfk, or ōfk'},
+{br:'oftá',en:'their, of them',src:'LSI',ref:'30–31',lsi:'Ēftā, or ōftā'},
+/* body */
+{br:'dá',en:'hand',src:'LSI',ref:'32',lsi:'Dā'},
+{br:'nat',en:'foot',src:'LSI',ref:'33',lsi:'Nat',
+ note:'The corpus entry nat “ear” in this dictionary conflicts with this; LSI puts “ear” at xaf (No. 38).'},
+{br:'bámus',en:'nose',src:'LSI',ref:'34',lsi:'Bāmus'},
+{br:'dandán',en:'tooth',src:'LSI',ref:'37',lsi:'Dandān'},
+{br:'xaf',en:'ear',src:'LSI',ref:'38',lsi:'Khaf'},
+{br:'puşah',en:'hair',src:'LSI',ref:'39',lsi:'Puṣhah'},
+{br:'doi',en:'tongue',src:'LSI',ref:'41',lsi:'Doi'},
+{br:'píđ',en:'belly (also phíđ)',src:'LSI',ref:'42',lsi:'Pīḍ, or phīḍ'},
+{br:'bhaj',en:'back (of the body)',src:'LSI',ref:'43',lsi:'Bhaj'},
+/* materials */
+{br:'áhin',en:'iron',src:'LSI',ref:'44',lsi:'Āhin'},
+{br:'zar',en:'silver (as glossed by LSI)',src:'LSI',ref:'46',lsi:'Zar',check:true,
+ note:'LSI No. 45 gives xísun “gold” and No. 46 zar “silver”. In Persian zar is normally “gold”, so the pairing is worth confirming.'},
+/* people */
+{br:'íŕ',en:'sister',src:'LSI',ref:'50',lsi:'Iṛ'},
+{br:'arvat',en:'wife',src:'LSI',ref:'53',lsi:'Arvat'},
+{br:'cúcah',en:'child',src:'LSI',ref:'54',lsi:'Chūchah'},
+{br:'me',en:'slave',src:'LSI',ref:'57',lsi:'Mē',
+ note:'Bray 1909 likewise has mē “slave-boy”, chohar “slave-girl”.'},
+{br:'zamindár',en:'cultivator, landholder',src:'LSI',ref:'58',lsi:'Zamindār'},
+{br:'bazģar',en:'cultivator, tenant farmer',src:'LSI',ref:'58',lsi:'Bazghar'},
+{br:'şomán',en:'shepherd',src:'LSI',ref:'59',lsi:'Shomān',check:true,
+ note:'Bray 1909 writes shwān; the Brahui Texts have şohán. The Kalat column is hard to read here — w or om.'},
+{br:'xudá',en:'God',src:'LSI',ref:'60',lsi:'Khudā'},
+{br:'şaitán',en:'devil',src:'LSI',ref:'61',lsi:'Shaitān'},
+/* sky, fire, water */
+{br:'de',en:'sun',src:'LSI',ref:'62',lsi:'Dē'},
+{br:'túho',en:'moon',src:'LSI',ref:'63',lsi:'Tūhō',
+ note:'The Kalat column prints what looks like Tūbō; Bray 1909 has tuh “moon” (tuh-eti “in the moon”), so the b is a scan artefact.'},
+{br:'istár',en:'star',src:'LSI',ref:'64',lsi:'Istār'},
+{br:'xáxar',en:'fire',src:'LSI',ref:'65',lsi:'Khākhar',
+ note:'The 1906 scan is inked over; reading confirmed from Bray 1909, khākhar “fire”.'},
+/* animals */
+{br:'đagí',en:'cow',src:'LSI',ref:'69, 143',lsi:'Ḍagī'},
+{br:'kucak',en:'dog',src:'LSI',ref:'70, 146',lsi:'Kuchak'},
+{br:'píşí',en:'cat',src:'LSI',ref:'71',lsi:'Pīshī'},
+{br:'bángo',en:'cock',src:'LSI',ref:'72',lsi:'Bāngō'},
+{br:'hanj',en:'duck',src:'LSI',ref:'73',lsi:'Hañj'},
+{br:'bíş',en:'donkey, ass',src:'LSI',ref:'74',lsi:'Bīsh',
+ note:'Bray 1909 confirms: bīshk “donkeys”.'},
+{br:'huc',en:'camel',src:'LSI',ref:'75',lsi:'Huch'},
+{br:'cuk',en:'bird',src:'LSI',ref:'76',lsi:'Chuk'},
+{br:'mádián',en:'mare',src:'LSI',ref:'139',lsi:'Mādiān'},
+{br:'xarás',en:'bull',src:'LSI',ref:'142',lsi:'Kharās'},
+{br:'mińđ',en:'bitch',src:'LSI',ref:'147',lsi:'Miṇḍ'},
+{br:'maŧ',en:'he-goat',src:'LSI',ref:'150',lsi:'Maṭ'},
+{br:'heŧ',en:'she-goat',src:'LSI',ref:'151',lsi:'Hēṭ'},
+/* verbs, imperative as printed */
+{br:'tuŧh',en:'sit!',src:'LSI',ref:'79',lsi:'Tuṭh',check:true},
+{br:'xalth',en:'beat!, strike',src:'LSI',ref:'81, 236',lsi:'Khalth'},
+{br:'salah',en:'stand!',src:'LSI',ref:'82',lsi:'Salah',check:true},
+{br:'kah',en:'die',src:'LSI',ref:'83',lsi:'Kah'},
+{br:'ete',en:'give!',src:'LSI',ref:'84, 234',lsi:'Ēti, ētē'},
+{br:'dúding',en:'to run',src:'LSI',ref:'85',lsi:'Dūding'},
+{br:'hinok',en:'gone',src:'LSI',ref:'219',lsi:'Hinōk'},
+/* space & quality */
+{br:'bursa',en:'up, above',src:'LSI',ref:'86',lsi:'Bursa'},
+{br:'burz',en:'high, tall',src:'LSI',ref:'135, 231',lsi:'Burz'},
+{br:'burztir',en:'higher',src:'LSI',ref:'136',lsi:'Burztir'},
+{br:'kullán burz',en:'highest',src:'LSI',ref:'137',lsi:'Kullān burz'},
+{br:'xuŕk',en:'near',src:'LSI',ref:'87',lsi:'Khuṛk'},
+{br:'şáf',en:'down, below',src:'LSI',ref:'88',lsi:'Shāf'},
+{br:'murr',en:'far',src:'LSI',ref:'89, 222',lsi:'Murr'},
+{br:'mon-án',en:'before, in front of',src:'LSI',ref:'90',lsi:'Mōne-ṭi, mōn-ān'},
+{br:'padán',en:'behind, after',src:'LSI',ref:'91',lsi:'Pade-ṭi, padān'},
+{br:'jomán',en:'good',src:'LSI',ref:'132',lsi:'Jomān'},
+{br:'şarr',en:'good',src:'LSI',ref:'132',lsi:'Sharr'},
+{br:'jomántir',en:'better',src:'LSI',ref:'133',lsi:'Jomāntir'},
+{br:'kullán jomán',en:'best',src:'LSI',ref:'134',lsi:'Kull-ān jomān'},
+{br:'gandao',en:'bad',src:'LSI',ref:'129, 131',lsi:'Gandaō'},
+/* function words */
+{br:'der',en:'who',src:'LSI',ref:'92, 220',lsi:'Dēr'},
+{br:'antae',en:'why',src:'LSI',ref:'94',lsi:'Antae'},
+{br:'agar',en:'if',src:'LSI',ref:'97',lsi:'Agar'},
+{br:'ho',en:'yes',src:'LSI',ref:'98',lsi:'Hō'},
+{br:'nah',en:'no',src:'LSI',ref:'99',lsi:'Nah'},
+{br:'hai hai armán',en:'alas!',src:'LSI',ref:'100',lsi:'Hai hai armān'},
+{br:'kull',en:'all (in kullán “of all”)',src:'LSI',ref:'134, 137',lsi:'Kull'},
+/* read out of the LSI sentences — glosses inferred from the parallel English */
+{br:'pin',en:'name',src:'LSI',ref:'220',lsi:'pin',check:true},
+{br:'zen',en:'saddle',src:'LSI',ref:'226–227',lsi:'zēn',check:true},
+{br:'dún',en:'well (for water)',src:'LSI',ref:'237',lsi:'dūn',check:true},
+{br:'pand',en:'road, way',src:'LSI',ref:'224',lsi:'pand',check:true},
+{br:'illa',en:'uncle',src:'LSI',ref:'225',lsi:'illa',check:true},
+{br:'barám',en:'marriage',src:'LSI',ref:'225',lsi:'barām',check:true},
+{br:'píhun',en:'white',src:'LSI',ref:'226',lsi:'pīhun',check:true,
+ note:'“pīhunā hullī” = the white horse. Compare the corpus entry píihun “silver”.'},
+{br:'mál',en:'cattle',src:'LSI',ref:'229',lsi:'māl',check:true},
+{br:'daraxt',en:'tree',src:'LSI',ref:'230',lsi:'darakht',check:true},
+{br:'bház',en:'much, many',src:'LSI',ref:'228',lsi:'bhāz',check:true},
+{br:'laŧ',en:'stripe, lash',src:'LSI',ref:'228',lsi:'laṭ',check:true},
+{br:'do-nem',en:'two and a half',src:'LSI',ref:'232',lsi:'dō-nēm',check:true},
+{br:'cuna',en:'small',src:'LSI',ref:'233',lsi:'chuna',check:true},
+{br:'saxt',en:'hard, severely',src:'LSI',ref:'236',lsi:'sakht',check:true},
+{br:'roz',en:'rope',src:'LSI',ref:'236',lsi:'rōz',check:true},
+{br:'taft',en:'bind!, tie',src:'LSI',ref:'236',lsi:'taft',check:true},
+{br:'şahr',en:'town, village',src:'LSI',ref:'241',lsi:'shahr',check:true},
+{br:'baxál',en:'shopkeeper',src:'LSI',ref:'241',lsi:'bakhāl',check:true},
+
+/* ============ Bray, The Brahui Language I (1909) ============ */
+{br:'káŧum',en:'head',src:'BRAY',ref:'§ examples',lsi:'kātum'},
+{br:'şván',en:'shepherd',src:'BRAY',ref:'§ examples',lsi:'shwān'},
+{br:'duzz',en:'thief',src:'BRAY',ref:'§ examples',lsi:'duzz'},
+{br:'tufak',en:'gun',src:'BRAY',ref:'§ examples',lsi:'tufak'},
+{br:'lok',en:'he-camel',src:'BRAY',ref:'plural list',lsi:'lok',check:true},
+{br:'ditar',en:'blood',src:'BRAY',ref:'word-list',lsi:'ditar',check:true}
+];
+
+const PHRASES = [
+/* ---- UDHR Art. 1, Brahui Language Board parallel text ---- */
+{br:'Muccá insáńk ájo o izzat ná rid aŧ barebar vadí massuno.',
+ en:'All human beings are born free and equal in dignity and rights.',src:'UDHR'},
+{br:'Ofte puhí o dalíl raseńgáne.',
+ en:'They are endowed with reason and conscience.',src:'UDHR'},
+{br:'Andáde ofte asi elo ton ílumí e vaddifoí e.',
+ en:'They should act towards one another in a spirit of brotherhood.',src:'UDHR'},
+/* ---- ILCAA Brahui Texts ---- */
+{br:'Asi xazmas as, asi xáxoas as, asi şokas as.',
+ en:'There was a deer, a crow and a fox.',src:'CORP'},
+{br:'Dá har musiŧŧingák asieloton ílumí karer.',
+ en:'These three were friends with one another.',src:'CORP'},
+{br:'As asi şohánas.',en:'There was a shepherd.',src:'CORP'},
+{br:'Asi deas xácá, tuģas xaná.',en:'One day he slept and saw a dream.',src:'CORP'},
+{br:'Asi ģaríbas assak.',en:'There was a poor man.',src:'CORP'},
+{br:'Salám alek.',en:'Peace be upon you (greeting).',src:'CORP'},
+{br:'Válekum salám.',en:'And upon you peace (reply).',src:'CORP'},
+{br:'Xudá háfiz.',en:'Goodbye.',src:'CORP'},
+{br:'Et havále.',en:'Tell the news.',src:'CORP'},
+/* ---- LSI IV, Standard List of Phrases, Brahui of Kalat ---- */
+{br:'Hin, hin-ak.',en:'Go.',src:'LSI',ref:'217'},
+{br:'Hinesa-aŧ.',en:'Going.',src:'LSI',ref:'218'},
+{br:'Ná pin der e?',en:'What is your name?',src:'LSI',ref:'220'},
+{br:'Dá hullí aŧ sál e?',en:'How old is this horse?',src:'LSI',ref:'221'},
+{br:'Kaşmír dáká axxa murr-e?',en:'How far is it from here to Kashmir?',src:'LSI',ref:'222'},
+{br:'Ná bávah-ná urá-ŧí aŧ már e?',en:'How many sons are there in your father’s house?',src:'LSI',ref:'223'},
+{br:'Í eno bhallo pand-as kare-nuŧ.',en:'I have walked a long way to-day.',src:'LSI',ref:'224'},
+{br:'Kaná illa-ná már-ná barám o-ná íŕ-to massune.',en:'The son of my uncle is married to his sister.',src:'LSI',ref:'225'},
+{br:'Píhuná hullí-ná zen urá-ŧí e.',en:'In the house is the saddle of the white horse.',src:'LSI',ref:'226'},
+{br:'Zen kata.',en:'Put the saddle upon his back.',src:'LSI',ref:'227'},
+{br:'Í e-ná már-e bház laŧ xalkunuŧ.',en:'I have beaten his son with many stripes.',src:'LSI',ref:'228'},
+{br:'E mál-e maşa-ná káŧumáe xaváfik.',en:'He is grazing cattle on the top of the hill.',src:'LSI',ref:'229'},
+{br:'Hame daraxta-ná keraģán e hullí-e sováre.',en:'He is sitting on a horse under that tree.',src:'LSI',ref:'230'},
+{br:'E-ná ilum íŕ-án burz-e.',en:'His brother is taller than his sister.',src:'LSI',ref:'231'},
+{br:'Ham-e girá-ná bhá do-nem rúpai e.',en:'The price of that is two rupees and a half.',src:'LSI',ref:'232'},
+{br:'Kaná bávah hame cuna urá-ŧí túlik.',en:'My father lives in that small house.',src:'LSI',ref:'233'},
+{br:'Dá rúpai-e ode ete.',en:'Give this rupee to him.',src:'LSI',ref:'234'},
+{br:'E rúpait-e oŕán halth.',en:'Take those rupees from him.',src:'LSI',ref:'235'},
+{br:'Ode saxt xalth o roz-aŧ taft.',en:'Beat him well and bind him with ropes.',src:'LSI',ref:'236'},
+{br:'Dún-án dír kaşşah.',en:'Draw water from the well.',src:'LSI',ref:'237'},
+{br:'Kaná mon-aŧ rai marak.',en:'Walk before me.',src:'LSI',ref:'238'},
+{br:'Dá dinná már e ki ná rand-aŧ barek?',en:'Whose boy comes behind you?',src:'LSI',ref:'239'},
+{br:'Ní dáde der-án halkus?',en:'From whom did you buy that?',src:'LSI',ref:'240'},
+{br:'Şahr-ná baxálas-on.',en:'From a shopkeeper of the village.',src:'LSI',ref:'241'}
+];
+
+const SRC={
+  LSI :{label:'Linguistic Survey of India IV (1906)',
+        note:'Standard List of Words and Phrases, Brahui of Kalat, items 1–241. Read directly off the page scans.',
+        url:'https://archive.org/details/in.ernet.dli.2015.42222'},
+  BRAY:{label:'Bray, The Brahui Language I (1909)',
+        note:'Used to settle readings the 1906 scan had damaged.',
+        url:'https://archive.org/details/in.ernet.dli.2015.13132'},
+  UDHR:{label:'UDHR Art. 1, Brahui parallel text',
+        note:'Brahui Language Board / University of Balochistan. The engine renders 11/11 of its words exactly.',
+        url:'https://omniglot.com/writing/brahui.htm'},
+  TOC :{label:'Brahui Texts (ILCAA 2024) — author glosses',
+        note:'Ali & Kobayashi. Story titles glossed by the authors, so these pairings are published.',url:''},
+  GRAM:{label:'Published grammatical description',
+        note:'Verb paradigms, numerals, pronouns.',url:''},
+  CORP:{label:'ILCAA corpus — inferred from context',
+        note:'Meaning read out of unambiguous context. These are the rows to put in front of a Brahui speaker first.',url:''},
+  MINE:{label:'Added by you',note:'Stored in this browser only. Export before you clear site data.',url:''}
+};
+
+/* ============================================================
+   3. STORAGE
+   ============================================================ */
+const KEY='brahui:dict:v3', SKEY='brahui:settings:v1';
+const store={
+  async get(k){
+    try{ if(window.storage&&window.storage.get){ const r=await window.storage.get(k); if(r) return r.value; } }catch(e){}
+    try{ return localStorage.getItem(k); }catch(e){ return null; }
+  },
+  async set(k,v){
+    try{ if(window.storage&&window.storage.set){ await window.storage.set(k,v); } }catch(e){}
+    try{ localStorage.setItem(k,v); }catch(e){}
+  }
+};
+let DICT=[], EXTRA=[];
+let S={engine:'browser',azvoice:'ur-PK-AsadNeural',azkey:'',azregion:'eastus',
+        voice:'',mode:'text',rate:0.7,carrier:true,src:'all',sort:'en',check:false};
+
+async function loadAll(){
+  try{ const raw=await store.get(KEY); EXTRA = raw?JSON.parse(raw):[]; }catch(e){ EXTRA=[]; }
+  try{ const raw=await store.get(SKEY); if(raw) Object.assign(S,JSON.parse(raw)); }catch(e){}
+  rebuild();
+}
+function rebuild(){
+  DICT=SEED.concat(EXTRA).map((w,i)=>Object.assign({},w,{i}));
+  sortDict(); renderWords(); renderChips();
+}
+function sortDict(){
+  DICT.sort((a,b)=> S.sort==='br'
+    ? a.br.localeCompare(b.br,'en',{sensitivity:'base'})
+    : a.en.localeCompare(b.en,'en',{sensitivity:'base'}));
+}
+async function saveExtra(){ await store.set(KEY,JSON.stringify(EXTRA)); }
+async function saveSettings(){ await store.set(SKEY,JSON.stringify(S)); }
+
+/* ============================================================
+   4. SPEECH
+   ============================================================ */
+let voices=[], warmed=false, player=null;
+const audioCache=new Map();
+function loadVoices(force){
+  voices=speechSynthesis.getVoices();
+  const find=re=>voices.findIndex(v=>re.test(v.lang)||re.test(v.name));
+  /* keep a voice the user chose, unless a re-scan asks us to reconsider —
+     an Urdu voice arriving late should win over the Hindi fallback */
+  if(S.voice && !force && voices.some(v=>v.name===S.voice)) return;
+  const ur=[/^ur-PK/i,/urdu \(pakistan\)/i,/^ur/i,/urdu/i].map(find).find(i=>i>=0);
+  const hi=find(/^hi|hindi/i), en=find(/^en-IN/i), any=find(/^en/i);
+  if(ur!==undefined&&ur>=0){ S.voice=voices[ur].name; if(S.mode==='deva'||S.mode==='eng') S.mode='text'; }
+  else if(hi>=0){ S.voice=voices[hi].name; S.mode='deva'; }
+  else if(en>=0||any>=0){ S.voice=voices[en>=0?en:any].name; S.mode='eng'; }
+}
+speechSynthesis.onvoiceschanged=loadVoices; loadVoices();
+/* Edge fetches its Online (Natural) voices after load; poll briefly. */
+(function poll(){
+  let n=0, seen=speechSynthesis.getVoices().length;
+  const t=setInterval(()=>{
+    const now=speechSynthesis.getVoices();
+    if(now.length!==seen){ seen=now.length; loadVoices(); }
+    if(++n>16) clearInterval(t);
+  },400);
+})();
+
+function carrier(t){ return S.carrier ? 'یہ '+t+' ہے' : t; }
+function xmlEsc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function ratePct(){ return Math.round((S.rate-1)*100)+'%'; }
+function buildSSML(txt,latin,literal){
+  const v=S.azvoice, loc=v.slice(0,5), mode=S.mode;
+  let body;
+  if(mode==='ipa'&&latin){
+    body=latin.split(/\s+/).filter(Boolean).map(w=>{
+      const ph=toAzIPA(w), fb=xmlEsc(toUrdu(w));
+      return ph?`<phoneme alphabet="ipa" ph="${ph}">${fb}</phoneme>`:fb;
+    }).join('<break time="120ms"/>');
+  } else {
+    const arabic=/^ar-/.test(v);
+    body = (mode==='deva'&&latin) ? xmlEsc(lineDeva(latin))
+         : (mode==='eng'&&latin) ? xmlEsc(lineEnglish(latin))
+         : arabic ? xmlEsc(latin?latin.split(/\s+/).map(w=>toUrdu(w)).join(' '):txt)
+         : xmlEsc(carrier(literal?txt:(latin?linePlain(latin):stripMarks(txt))));
+  }
+  return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${loc}">`+
+         `<voice name="${v}"><prosody rate="${ratePct()}">`+
+         `<break time="250ms"/>${body}<break time="350ms"/></prosody></voice></speak>`;
+}
+async function azureSpeak(txt,latin,literal){
+  if(!S.azkey){ snack('Add an Azure key in voice settings, or switch to the browser engine.'); return; }
+  const ssml=buildSSML(txt,latin,literal);
+  if(player){player.pause();player=null;}
+  if(audioCache.has(ssml)){ play(audioCache.get(ssml)); return; }
+  try{
+    const r=await fetch(`https://${(S.azregion||'eastus')}.tts.speech.microsoft.com/cognitiveservices/v1`,{
+      method:'POST',
+      headers:{'Ocp-Apim-Subscription-Key':S.azkey,'Content-Type':'application/ssml+xml',
+               'X-Microsoft-OutputFormat':'audio-24khz-96kbitrate-mono-mp3'},
+      body:ssml});
+    if(!r.ok){ snack('Azure returned '+r.status+'. Check key, region and voice.'); return; }
+    const url=URL.createObjectURL(await r.blob());
+    audioCache.set(ssml,url); play(url);
+  }catch(e){ snack('Request blocked by the browser. Proxy Azure through your own server.'); }
+}
+function play(url){ player=new Audio(url); player.play(); }
+function browserSpeak(txt,latin,literal){
+  if(!warmed){warmed=true;const w=new SpeechSynthesisUtterance(' ');w.volume=0;speechSynthesis.speak(w);}
+  speechSynthesis.cancel();
+  const spoken = (S.mode==='deva'&&latin) ? lineDeva(latin)
+               : (S.mode==='eng'&&latin) ? lineEnglish(latin)
+               : carrier(literal?txt:(latin?linePlain(latin):stripMarks(txt)));
+  setTimeout(()=>{
+    const u=new SpeechSynthesisUtterance('   '+spoken.trim()+'  ');
+    const v=voices.find(v=>v.name===S.voice);
+    if(v){u.voice=v;u.lang=v.lang;} else u.lang='ur-PK';
+    u.rate=S.rate;
+    speechSynthesis.speak(u);
+  },90);
+}
+function speak(txt,latin,literal){
+  if((!txt||!txt.trim())&&!latin) return;
+  if(!txt) txt=latin.split(/\s+/).map(w=>toUrdu(w)).join(' ');
+  if(S.engine==='azure') azureSpeak(txt,latin,literal); else browserSpeak(txt,latin,literal);
+}
+function drill(txt,reps,latin,literal){
+  const n=reps||3;
+  if(literal) return speak(Array(n).fill(txt).join('، '),null,true);
+  if(latin) return speak(txt,Array(n).fill(latin).join(' '));
+  speak(Array(n).fill(txt).join('، '));
+}
+
+/* ============================================================
+   5. UI PLUMBING
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+let snackTimer=null;
+function snack(msg){
+  const el=$('#snack'); el.textContent=msg; el.classList.add('on');
+  clearTimeout(snackTimer); snackTimer=setTimeout(()=>el.classList.remove('on'),3200);
+}
+/* On a desktop window the sheet is a permanent right-hand pane, so it needs no
+   scrim and never slides away — it just shows a placeholder when nothing is picked. */
+const DESK=()=>matchMedia('(min-width:1100px)').matches;
+let SELID=null;
+function sheetPlaceholder(){
+  $('#sheet-body').innerHTML=`<div class="empty">
+    <svg viewBox="0 0 24 24"><path d="M18 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2zM8 4h3v7l-1.5-1L8 11V4z"/></svg>
+    <div>Pick a word to see its script, IPA, the vocalized string a voice can read, and where it was published.</div></div>`;
+}
+function openSheet(html){
+  $('#sheet-body').innerHTML=html;
+  $('#sheet').classList.add('on');
+  $('#scrim').classList.add('on','sheet-mode');
+  $('#sheet-body').scrollTop=0;
+}
+function closeSheet(){
+  $('#dialog').classList.remove('on');
+  $('#scrim').classList.remove('on','sheet-mode');
+  if(DESK()){ SELID=null; sheetPlaceholder(); renderWords(); }
+  else $('#sheet').classList.remove('on');
+}
+function openDialog(html){
+  $('#dialog').innerHTML=html;
+  $('#dialog').classList.add('on');
+  $('#scrim').classList.remove('sheet-mode'); $('#scrim').classList.add('on');
+}
+$('#scrim').addEventListener('click',closeSheet);
+
+const TITLES={
+  words:['Brahui Dictionary','براہوئی لغت'],
+  phrases:['Phrases','جُملے'],
+  sounds:['Sound inventory','آوازیں'],
+  type:['Type &amp; convert','لِکھو'],
+  about:['Sources','مآخذ']
+};
+let VIEW='words';
+function nav(v){
+  VIEW=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id==='view-'+v));
+  document.querySelectorAll('#nav button').forEach(b=>{
+    if(b.dataset.nav===v) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
+  });
+  $('#screen-title').innerHTML=TITLES[v][0]+'<small id="screen-sub">'+TITLES[v][1]+'</small>';
+  const searchable = v==='words'||v==='phrases'||v==='sounds';
+  $('#searchwrap').style.display = searchable?'flex':'none';
+  $('#chips').style.display = v==='words'?'flex':'none';
+  $('#fab').style.display = v==='words'?'flex':'none';
+  /* the right-hand pane belongs to the word list; collapse it elsewhere */
+  document.querySelector('.phone').classList.toggle('no-sheet',v!=='words');
+  if(v!=='words'&&!DESK()) $('#sheet').classList.remove('on');
+  $('#main').scrollTop=0;
+  if(v==='sounds') renderSounds();
+  if(v==='phrases') renderPhrases();
+  if(v==='about') renderSources();
+}
+document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>nav(b.dataset.nav)));
+
+/* clock in the mock status bar */
+function tick(){
+  const d=new Date();
+  $('#clock').textContent=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+}
+tick(); setInterval(tick,20000);
+
+/* ============================================================
+   6. WORDS
+   ============================================================ */
+const TAGCLASS={LSI:'lsi',BRAY:'lsi',MINE:'mine',CORP:'warn'};
+function renderChips(){
+  const counts={};
+  DICT.forEach(w=>counts[w.src]=(counts[w.src]||0)+1);
+  const order=['all','LSI','BRAY','UDHR','TOC','GRAM','CORP','MINE'];
+  $('#chips').innerHTML=order.filter(k=>k==='all'||counts[k]).map(k=>{
+    const on=S.src===k;
+    const label=k==='all'?'All':k;
+    const n=k==='all'?DICT.length:counts[k];
+    return `<button class="chip" data-src="${k}" aria-pressed="${on}">${label}<span class="n">${n}</span></button>`;
+  }).join('')+
+  `<button class="chip" data-check="1" aria-pressed="${S.check}">
+     <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V8h2v5z"/></svg>Needs a speaker</button>`;
+}
+function matches(w,q){
+  if(!q) return true;
+  const hay=(w.en+' '+w.br+' '+(w.lsi||'')+' '+line(w.br,{sukun:false})+' '+lineEnglish(w.br)).toLowerCase();
+  return hay.includes(q);
+}
+function renderWords(){
+  const q=($('#q').value||'').trim().toLowerCase();
+  let rows=DICT.filter(w=>matches(w,q));
+  if(S.src!=='all') rows=rows.filter(w=>w.src===S.src);
+  if(S.check) rows=rows.filter(w=>w.check);
+  const checkN=DICT.filter(w=>w.check).length;
+  $('#wordcount').innerHTML=
+    `<b>${rows.length}</b> shown · ${DICT.length} entries · ${checkN} awaiting a speaker check ·
+     sorted by <a href="#" data-act="sort">${S.sort==='en'?'meaning':'Brahui'}</a>`;
+  if(!rows.length){
+    $('#wordlist').innerHTML=`<div class="empty">
+      <svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 10-.7.7l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 110-9 4.5 4.5 0 010 9z"/></svg>
+      <div>Nothing matches. Try the Brahui, the Urdu script or the English.</div></div>`;
+    return;
+  }
+  $('#wordlist').innerHTML=rows.map(w=>{
+    const ur=line(w.br,{sukun:false});
+    const first=[...ur.replace(/[ً-ْ]/g,'')][0]||'؟';
+    return `<button class="li${w.i===SELID?' sel':''}" data-i="${w.i}">
+      <span class="avatar${w.src==='LSI'||w.src==='BRAY'?' alt':''}">${first}</span>
+      <span class="body">
+        <span class="ur">${ur}</span>
+        <span class="en">${esc(w.en)}</span>
+        <span class="lat">${esc(w.br)}${w.ref?' · LSI '+esc(w.ref):''}</span>
+      </span>
+      <span class="tail">
+        ${w.check?'<span class="tag warn">?</span>':''}
+        <span class="tag ${TAGCLASS[w.src]||''}">${w.src}</span>
+      </span>
+    </button>`;
+  }).join('');
+}
+function entryById(i){ return DICT.find(w=>w.i===+i); }
+function openEntry(i){
+  const w=entryById(i); if(!w) return;
+  SELID=w.i; if(DESK()) renderWords();
+  const ur=line(w.br,{sukun:false}), tts=line(w.br), ipa=lineIPA(w.br);
+  const s=SRC[w.src]||{label:w.src,note:''};
+  openSheet(`
+    <div style="padding:4px 20px 0">
+      <div class="ur-big">${ur}</div>
+      <div style="font-size:20px;font-weight:500;margin-top:2px">${esc(w.en)}</div>
+      <div class="mono" style="color:var(--osv);margin-top:4px">${esc(w.br)} &nbsp;<span class="ipa">/${ipa}/</span></div>
+      <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+        <span class="tag ${TAGCLASS[w.src]||''}">${w.src}</span>
+        ${w.ref?`<span class="tag">${w.src==='LSI'?'No. ':''}${esc(w.ref)}</span>`:''}
+        ${w.check?'<span class="tag warn">needs a speaker</span>':''}
+      </div>
+    </div>
+    <div class="btnrow" style="padding:14px">
+      <button class="btn" data-act="say" data-i="${w.i}"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Say</button>
+      <button class="btn tonal" data-act="drill" data-i="${w.i}">Drill ×3</button>
+      <button class="btn out" data-act="copy" data-v="${esc(ur)}">Copy script</button>
+      ${w.src==='MINE'?`<button class="btn text" data-act="del" data-i="${w.i}">Delete</button>`:''}
+    </div>
+    <div class="card">
+      <div class="kv"><span>Say as (English)</span><span class="mono" style="font-weight:700">${esc(lineEnglish(w.br))}</span></div>
+      <div class="kv"><span>Vocalized for TTS</span><span class="ur-big" style="font-size:20px">${tts}</span></div>
+      <div class="kv"><span>Diacritic-stripping</span><span class="ur-big" style="font-size:19px">${linePlain(w.br)}</span></div>
+      <div class="kv"><span>Devanagari</span><span style="font-size:18px">${lineDeva(w.br)}</span></div>
+      <div class="kv"><span>Azure IPA</span><span class="mono">${esc(lineAzIPA(w.br).join(' '))}</span></div>
+      ${w.lsi?`<div class="kv"><span>As printed in the source</span><span class="mono">${esc(w.lsi)}</span></div>`:''}
+    </div>
+    <div class="card">
+      <h3>Source</h3>
+      <div style="font-size:13.5px;font-weight:500">${esc(s.label)}</div>
+      <div style="font-size:12.5px;color:var(--osv);margin-top:4px">${esc(s.note)}</div>
+      ${w.ref&&w.src==='LSI'?`<div style="font-size:12.5px;color:var(--osv);margin-top:4px">Standard list item ${esc(w.ref)}, Brahui of Kalat.</div>`:''}
+      ${s.url?`<div style="margin-top:8px"><a href="${s.url}" target="_blank" rel="noopener">Open the scan on archive.org</a></div>`:''}
+    </div>
+    ${w.note?`<div class="notebox"><b>Note.</b> ${esc(w.note)}</div>`:''}
+    ${w.check?`<div class="warnbox">This row is not confirmed by a Brahui speaker. Either the gloss was inferred
+      from context or the printed form was hard to read. Put it in front of a speaker before you trust it.</div>`:''}
+  `);
+}
+
+/* ============================================================
+   7. PHRASES
+   ============================================================ */
+function renderPhrases(){
+  const q=($('#q').value||'').trim().toLowerCase();
+  const rows=PHRASES.filter(p=>!q||(p.br+' '+p.en).toLowerCase().includes(q));
+  $('#phraselist').innerHTML = rows.length ? rows.map((p,i)=>`
+    <div class="card">
+      <div class="ur-big">${line(p.br,{sukun:false})}</div>
+      <div class="mono" style="color:var(--osv);font-size:12.5px;margin-top:6px">${esc(p.br)}</div>
+      <div style="font-size:13.5px;margin-top:6px">${esc(p.en)}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <button class="btn tonal" data-act="say-phrase" data-p="${PHRASES.indexOf(p)}">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>Say</button>
+        <span class="tag ${TAGCLASS[p.src]||''}">${p.src}${p.ref?' '+esc(p.ref):''}</span>
+      </div>
+    </div>`).join('') : `<div class="empty">No phrase matches.</div>`;
+}
+
+/* ============================================================
+   8. SOUNDS
+   ============================================================ */
+const VEX={
+  'a':['بس','bas','short a'],'á':['بات','bát','long aa'],
+  'i':['دل','dil','short i'],'í':['تین','tín','long ee'],
+  'u':['گم','gum','short u'],'ú':['دور','dúr','long oo'],
+  'e':['میز','mez','long e'],'o':['دو','do','long o'],
+  'ai':['ہے','hai','diphthong ai'],'au':['کون','kaun','diphthong au']
+};
+const GROUPS=[
+  ['Stops & affricates',['b','p','t','ŧ','d','đ','k','g','c','j']],
+  ['Fricatives',['f','v','s','z','ş','ź','x','ģ','h']],
+  ['Nasals, liquids & glide',['m','n','ń','l','ļ','r','ŕ','y',"'"]],
+  ['Aspirates — loan phonemes',['bh','ph','th','ŧh','dh','đh','kh','gh','ch','jh','ŕh']],
+  ['Vowels',['a','á','i','í','u','ú','e','o','ai','au']]
+];
+function FRAME(k,isC){ if(isC) return k+'á'; if(k==='e'||k==='o') return 'b'+k; return 'b'+k+'b'; }
+function renderSounds(){
+  const q=($('#q').value||'').trim().toLowerCase();
+  let h='';
+  for(const [name,items] of GROUPS){
+    const rows=items.filter(k=>{
+      const s=(k+' '+(C[k]?C[k][1]+' '+C[k][2]:V[k].ipa+' '+V[k].note)).toLowerCase();
+      return !q||s.includes(q);
+    });
+    if(!rows.length) continue;
+    h+=`<tr><td colspan="4" style="padding:0"><div class="grp">${name}</div></td></tr>`;
+    for(const k of rows){
+      const isC=!!C[k];
+      const ur=isC?C[k][0]+'َ':V[k].ini;
+      const ipa=isC?C[k][1]:V[k].ipa;
+      const note=isC?C[k][2]:V[k].note;
+      const fr=FRAME(k,isC), vx=!isC&&VEX[k];
+      const say=vx?vx[0]:toUrdu(fr), lit=vx?'1':'';
+      h+=`<tr>
+        <td class="k">${esc(k)}</td>
+        <td class="u">${ur}</td>
+        <td><span class="ipa">[${ipa}]</span><br>${note}${vx?` — as in <b>${vx[0]}</b> (${vx[1]})`:''}${ENG_GAPS.includes(k)?' <b>— no English equivalent</b>':''}</td>
+        <td style="width:96px;white-space:nowrap">
+          <button class="btn tonal" style="padding:7px 12px" data-act="drill-s" data-say="${esc(say)}" data-fr="${esc(fr)}" data-lit="${lit}">Drill</button>
+          <button class="btn text" style="padding:7px 6px" data-act="once-s" data-say="${esc(say)}" data-fr="${esc(fr)}" data-lit="${lit}">Once</button>
+        </td></tr>`;
+    }
+  }
+  $('#soundlist').innerHTML=h;
+}
+
+/* ============================================================
+   9. SOURCES SCREEN
+   ============================================================ */
+function renderSources(){
+  const counts={};
+  DICT.forEach(w=>counts[w.src]=(counts[w.src]||0)+1);
+  $('#sourcelist').innerHTML=Object.keys(SRC).map(k=>`
+    <div class="srcline">
+      <span class="code">${k}</span>
+      <span>
+        <b>${esc(SRC[k].label)}</b> — ${counts[k]||0} entr${(counts[k]||0)===1?'y':'ies'}<br>
+        <span style="color:var(--osv);font-size:12.5px">${esc(SRC[k].note)}</span>
+        ${SRC[k].url?`<br><a href="${SRC[k].url}" target="_blank" rel="noopener">open source</a>`:''}
+      </span>
+    </div>`).join('');
+}
+
+/* ============================================================
+   10. CONVERTER
+   ============================================================ */
+function convert(){
+  const v=$('#src').value;
+  $('#o-ur').textContent=line(v,{sukun:false})||' ';
+  $('#o-tts').textContent=line(v)||' ';
+  $('#o-ipa').textContent='/'+lineIPA(v)+'/';
+  $('#o-plain').textContent=linePlain(v)||' ';
+  $('#o-deva').textContent=lineDeva(v)||' ';
+  $('#o-eng').textContent=lineEnglish(v)||' ';
+}
+function reverse(){
+  const v=$('#rsrc').value;
+  const r=lineFromUrdu(v);
+  const clean=r.latin.replace(/ₐ/g,'a');
+  $('#r-lat').textContent=r.latin||' ';
+  $('#r-eng').textContent=lineEnglish(clean)||' ';
+  $('#r-ipa').textContent=v.trim()?'/'+lineIPA(clean)+'/':' ';
+  const issues=validateAerab(v);
+  $('#r-issues').innerHTML=issues.length?issues.slice(0,6).map(i=>'• '+esc(i)).join('<br>'):'';
+  $('#r-note').textContent=r.guessed
+    ? r.guessed+' short vowel'+(r.guessed>1?'s':'')+' marked ₐ — not recorded in the script, replace with the real vowel'
+    : (v.trim()?'Fully recovered — the script carried every vowel.':'');
+}
+$('#src').addEventListener('input',convert);
+$('#rsrc').addEventListener('input',reverse);
+$('#q').addEventListener('input',()=>{
+  if(VIEW==='words') renderWords(); else if(VIEW==='phrases') renderPhrases(); else if(VIEW==='sounds') renderSounds();
+});
+
+/* ============================================================
+   11. ADD / EDIT / EXPORT
+   ============================================================ */
+function addDialog(prefillScript,prefillLatin){
+  openDialog(`
+    <h2>Add a word</h2>
+    <p>Write it in Brahui script or in Brolikva Latin — the other one is derived.</p>
+    <div class="field ur"><input id="a-sc" placeholder="دِیر" value="${esc(prefillScript||'')}"><label>Brahui script</label></div>
+    <div class="field"><input id="a-br" placeholder="dír" value="${esc(prefillLatin||'')}"><label>Latin (Brolikva)</label></div>
+    <div class="field"><input id="a-en" placeholder="water"><label>Meaning</label></div>
+    <div class="mono" id="a-prev" style="color:var(--osv);font-size:12px;min-height:16px"></div>
+    <div class="dialog-actions">
+      <button class="btn text" data-act="close">Cancel</button>
+      <button class="btn" data-act="add-save">Save</button>
+    </div>`);
+  const sc=$('#a-sc'), br=$('#a-br'), prev=$('#a-prev');
+  const upd=()=>{
+    if(sc.value.trim() && !br.dataset.touched) br.value=lineFromUrdu(sc.value.trim()).latin;
+    const b=br.value.replace(/ₐ/g,'a');
+    prev.textContent=b?('say as: '+lineEnglish(b)+'   /'+lineIPA(b)+'/'):'';
+  };
+  sc.addEventListener('input',upd);
+  br.addEventListener('input',function(){this.dataset.touched='1';upd();});
+  upd(); (prefillScript?br:sc).focus();
+}
+async function addSave(){
+  const en=$('#a-en').value.trim().normalize('NFC');
+  const sc=$('#a-sc').value.trim().normalize('NFC');
+  let br=$('#a-br').value.trim().normalize('NFC').replace(/ₐ/g,'a');
+  if(!br&&sc) br=lineFromUrdu(sc).latin.replace(/ₐ/g,'a');
+  if(!en||!br){ snack('A meaning and a Brahui form are both needed.'); return; }
+  EXTRA=EXTRA.filter(w=>!(w.en.toLowerCase()===en.toLowerCase()&&w.br===br));
+  EXTRA.push({br,en,src:'MINE'});
+  await saveExtra(); rebuild(); closeSheet(); snack('“'+en+'” saved.');
+}
+function dl(text,name,type){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; a.click();
+}
+function exportJSON(){
+  dl(JSON.stringify(DICT.map(w=>({
+    meaning:w.en, brahui_latin:w.br, source:w.src, source_ref:w.ref||'', as_printed:w.lsi||'',
+    needs_speaker_check:!!w.check, note:w.note||'',
+    brahui_script:line(w.br,{sukun:false}), urdu_tts_vocalized:line(w.br),
+    ipa:lineIPA(w.br), azure_ipa:lineAzIPA(w.br).join(' '),
+    urdu_plain:linePlain(w.br), devanagari:lineDeva(w.br), english_respell:lineEnglish(w.br)
+  })),null,2),'brahui-lexicon.json','application/json');
+  snack(DICT.length+' entries exported.');
+}
+function exportTSV(){
+  const rows=DICT.filter(w=>w.check).concat(DICT.filter(w=>!w.check));
+  const head=['brolikva','brahui_script','our_ipa','our_meaning','source','source_ref','as_printed','CORRECT?','fixed_script','fixed_meaning','notes'];
+  const body=rows.map(w=>[w.br,line(w.br,{sukun:false}),lineIPA(w.br),w.en,w.src,w.ref||'',w.lsi||'','','','',(w.note||'').replace(/\t/g,' ')]);
+  dl([head].concat(body).map(r=>r.join('\t')).join('\n'),'brahui-review-sheet.tsv','text/tab-separated-values');
+  snack('Review sheet exported — unconfirmed rows first.');
+}
+async function bulkAdd(){
+  const t=$('#bulk').value; let n=0;
+  const ARABIC=/[؀-ۿ]/;
+  t.split(/\n/).forEach(ln=>{
+    const m=ln.split(/\s*[=|\t]\s*/);
+    if(m.length>=2&&m[0].trim()&&m[1].trim()){
+      let a=m[0].trim(), b=m[1].trim();
+      if(ARABIC.test(a)){ const t2=a; a=b; b=t2; }
+      const en=a, br=(ARABIC.test(b)?lineFromUrdu(b).latin:b).replace(/ₐ/g,'a');
+      EXTRA=EXTRA.filter(w=>!(w.en.toLowerCase()===en.toLowerCase()&&w.br===br));
+      EXTRA.push({en,br,src:'MINE'}); n++;
+    }
+  });
+  $('#bulk').value='';
+  await saveExtra(); rebuild(); snack(n+' entr'+(n===1?'y':'ies')+' added.');
+}
+
+/* ============================================================
+   12. SETTINGS SHEET
+   ============================================================ */
+/* What this machine can actually say, and how to fix what it cannot.
+   Written per-platform because the answer really is different on macOS. */
+function voiceDiagnostic(){
+  const vs=speechSynthesis.getVoices();
+  const hit=re=>vs.filter(v=>re.test(v.lang)||re.test(v.name));
+  const ur=hit(/^ur|urdu/i), hi=hit(/^hi-|hindi/i), pa=hit(/^pa-|punjabi/i),
+        fa=hit(/^fa-|persian|farsi/i), ar=hit(/^ar-/i), en=hit(/^en/i), brh=hit(/brahui|^brh/i);
+  const online=vs.filter(v=>/Online \(Natural\)/i.test(v.name));
+  const ua=navigator.userAgent;
+  const mac=/Mac OS X|Macintosh/.test(ua), win=/Windows/.test(ua);
+  const edge=/Edg\//.test(ua);
+  const row=(label,list,verdict)=>`<div class="kv" style="align-items:flex-start">
+    <span style="flex:0 0 74px">${label}</span>
+    <span style="flex:1;text-align:left;max-width:none">
+      ${list.length?`<b>${list.length}</b> — ${esc(list.slice(0,3).map(v=>v.name).join(', '))}${list.length>3?' …':''}`
+                   :'<b style="color:var(--err)">none</b>'}
+      <br><span style="color:var(--osv);font-size:12px">${verdict}</span></span></div>`;
+  const platform = mac ? `
+    <b>On this Mac.</b> macOS has no Urdu voice at all — Apple’s catalogue stops at Hindi, Arabic and Persian,
+    so there is nothing to install and a Brahui or Urdu keyboard will not create one. Three ways out, best first:
+    <br><br>
+    <b>1. Use the Hindi voice.</b> If <i>Lekha (hi-IN)</i> is listed above, this app already switched Send to
+    <b>Devanagari</b> and you are getting the retroflexes, the aspirates and the long–short vowel contrast.
+    Missing it? System Settings → Accessibility → Spoken Content → System Voice → <b>Manage Voices…</b> → Hindi.
+    <br><br>
+    <b>2. Open this file in Microsoft Edge.</b> Edge also exposes Microsoft’s cloud voices through this same
+    Web Speech API, and that set includes <code>ur-PK</code>. They arrive a few seconds after the page loads —
+    click <b>Re-scan</b> and look for names ending in <i>Online (Natural)</i>.
+    ${edge?`This is Edge and ${online.length} such voice${online.length===1?'':'s'} ${online.length===1?'has':'have'} loaded.`
+          :'You are not in Edge right now, so none of them can appear.'}
+    <br><br>
+    <b>3. Azure Speech.</b> Switch Engine to Azure and paste a key — that gives you real
+    <code>ur-PK-AsadNeural</code> and, with Send = <b>IPA phonemes</b>, the only mode that can be told
+    exactly which sounds to make.`
+  : win ? `
+    <b>On Windows.</b> No local Urdu TTS voice ships with the OS, so a language pack or keyboard will not
+    create one. Microsoft Edge exposes Microsoft’s online natural voices — including Urdu — through this same
+    API for free; open this file in Edge and click <b>Re-scan</b>.
+    ${edge?`This is Edge, with ${online.length} online natural voice${online.length===1?'':'s'} loaded.`:''}
+    Otherwise use Engine → Azure.`
+  : `<b>Chrome and Firefox only see voices installed locally</b>, so Urdu will not appear unless the system
+     has it. Microsoft Edge additionally exposes Microsoft’s online natural voices, Urdu among them.`;
+  return `
+    <div class="card">
+      <h3>What this browser reports — ${vs.length} voice${vs.length===1?'':'s'}</h3>
+      ${row('Brahui',brh,brh.length?'Unexpected — please say what it is called.':'Expected. <b>No Brahui TTS voice exists anywhere in the world.</b>')}
+      ${row('Urdu',ur,ur.length?'<b>Best case.</b> Set Send to Urdu text.':'The app falls back — see below.')}
+      ${row('Hindi',hi,hi.length?'<b>Good substitute.</b> Send = Devanagari. Carries retroflex, aspirate and vowel length; loses only ڷ /ɬ/.':'—')}
+      ${row('Punjabi',pa,pa.length?'Usable — Shahmukhi is close to Urdu. Try Send = Urdu text.':'—')}
+      ${row('Persian',fa,fa.length?'Partial — right script, no retroflex series.':'—')}
+      ${row('Arabic',ar,ar.length?'Weak — reads the script but flattens ٹ ڈ ڑ گ چ پ. It does read the aerab.':'—')}
+      ${row('English',en,en.length?'Last resort. Send = English respelling; the retroflex and aspirate contrasts are lost.':'—')}
+    </div>
+    <div class="btnrow"><button class="btn out" data-act="rescan">Re-scan voices</button></div>
+    <div class="notebox">${platform}<br><br>
+      A voice installed while the browser was already running will not show up until the browser is fully
+      quit and reopened — the list is cached for the life of the process.</div>`;
+}
+function settingsSheet(){
+  const vs=speechSynthesis.getVoices();
+  openSheet(`
+    <div style="padding:0 20px"><h2 style="font-size:19px;font-weight:500;margin:2px 0 10px">Voice</h2></div>
+    <div class="field">
+      <select id="s-engine">
+        <option value="browser"${S.engine==='browser'?' selected':''}>Browser speech (free)</option>
+        <option value="azure"${S.engine==='azure'?' selected':''}>Azure Speech (needs a key)</option>
+      </select><label>Engine</label>
+    </div>
+    <div class="field" id="wrap-bvoice">
+      <select id="s-voice">${vs.map(v=>`<option value="${esc(v.name)}"${v.name===S.voice?' selected':''}>${esc(v.name)} — ${v.lang}</option>`).join('')||'<option>no voices found</option>'}</select>
+      <label>Browser voice</label>
+    </div>
+    <div class="field" id="wrap-avoice">
+      <select id="s-azvoice">
+        ${['ur-PK-AsadNeural','ur-PK-UzmaNeural','ur-IN-SalmanNeural','ur-IN-GulNeural','hi-IN-MadhurNeural','hi-IN-SwaraNeural','en-IN-PrabhatNeural','en-IN-NeerjaNeural','ar-SA-HamedNeural','ar-EG-ShakirNeural']
+          .map(v=>`<option value="${v}"${S.azvoice===v?' selected':''}>${v}</option>`).join('')}
+      </select><label>Azure voice</label>
+    </div>
+    <div class="field" id="wrap-azkey"><input id="s-azkey" type="password" value="${esc(S.azkey)}" placeholder="not stored on any server"><label>Azure key</label></div>
+    <div class="field" id="wrap-azregion"><input id="s-azregion" value="${esc(S.azregion)}"><label>Azure region</label></div>
+    <div class="field">
+      <select id="s-mode">
+        <option value="text"${S.mode==='text'?' selected':''}>Urdu text</option>
+        <option value="deva"${S.mode==='deva'?' selected':''}>Devanagari (for a Hindi voice)</option>
+        <option value="eng"${S.mode==='eng'?' selected':''}>English respelling</option>
+        <option value="ipa"${S.mode==='ipa'?' selected':''}>IPA phonemes (Azure only)</option>
+      </select><label>Send to the voice</label>
+    </div>
+    <div style="padding:4px 20px 0;font-size:12px;color:var(--osv)">Speed <b id="s-rateval">${S.rate}</b></div>
+    <div style="padding:6px 20px 10px"><input type="range" id="s-rate" min="0.3" max="1" step="0.05" value="${S.rate}"></div>
+    <div class="switchrow">
+      <span>Carrier phrase<small>Wrap the word in “یہ … ہے” so the voice does not clip it</small></span>
+      <button class="sw" id="s-carrier" aria-pressed="${S.carrier}"></button>
+    </div>
+    <div class="btnrow">
+      <button class="btn tonal" data-act="test-voice">Test voice</button>
+      <button class="btn out" data-act="ph-test">Retroflex check</button>
+      <button class="btn out" data-act="lh-test">ڷ check</button>
+    </div>
+    <div class="section-h">Can this machine read Brahui?</div>
+    ${voiceDiagnostic()}
+  `);
+  const sync=()=>{
+    const az=$('#s-engine').value==='azure';
+    ['wrap-avoice','wrap-azkey','wrap-azregion'].forEach(id=>$('#'+id).style.display=az?'block':'none');
+    $('#wrap-bvoice').style.display=az?'none':'block';
+  };
+  $('#s-engine').addEventListener('change',e=>{S.engine=e.target.value;sync();saveSettings();});
+  $('#s-voice').addEventListener('change',e=>{S.voice=e.target.value;saveSettings();});
+  $('#s-azvoice').addEventListener('change',e=>{S.azvoice=e.target.value;saveSettings();});
+  $('#s-azkey').addEventListener('input',e=>{S.azkey=e.target.value;saveSettings();});
+  $('#s-azregion').addEventListener('input',e=>{S.azregion=e.target.value;saveSettings();});
+  $('#s-mode').addEventListener('change',e=>{
+    S.mode=e.target.value;
+    if(S.mode==='ipa'&&S.engine!=='azure'){ snack('IPA phonemes only work with Azure — the browser API cannot take phoneme strings.'); }
+    saveSettings();
+  });
+  $('#s-rate').addEventListener('input',e=>{S.rate=parseFloat(e.target.value);$('#s-rateval').textContent=S.rate;saveSettings();});
+  $('#s-carrier').addEventListener('click',e=>{
+    S.carrier=!S.carrier; e.currentTarget.setAttribute('aria-pressed',S.carrier); saveSettings();
+  });
+  sync();
+}
+
+/* ============================================================
+   13. ONE CLICK HANDLER
+   ============================================================ */
+document.addEventListener('click',async e=>{
+  const chip=e.target.closest('[data-src],[data-check]');
+  if(chip&&chip.classList.contains('chip')){
+    if(chip.dataset.check){ S.check=!S.check; } else { S.src=chip.dataset.src; }
+    saveSettings(); renderChips(); renderWords(); return;
+  }
+  const li=e.target.closest('.li[data-i]');
+  if(li){ openEntry(li.dataset.i); return; }
+  const el=e.target.closest('[data-act]');
+  if(!el) return;
+  const act=el.dataset.act;
+  if(act!=='sort') e.preventDefault();
+  const w=el.dataset.i?entryById(el.dataset.i):null;
+  switch(act){
+    case 'clear-q': $('#q').value=''; renderWords(); renderPhrases(); renderSounds(); break;
+    case 'sort':
+      e.preventDefault(); S.sort=S.sort==='en'?'br':'en'; saveSettings(); sortDict(); renderWords(); break;
+    case 'settings': settingsSheet(); break;
+    case 'theme-info': nav('about'); break;
+    case 'say': if(w) speak(line(w.br,{sukun:false}),w.br); break;
+    case 'drill': if(w) drill(line(w.br,{sukun:false}),3,w.br); break;
+    case 'copy': navigator.clipboard.writeText(el.dataset.v||''); snack('Copied.'); break;
+    case 'del':
+      if(w){ EXTRA=EXTRA.filter(x=>!(x.en===w.en&&x.br===w.br)); await saveExtra(); rebuild(); closeSheet(); snack('Deleted.'); }
+      break;
+    case 'say-phrase': { const p=PHRASES[+el.dataset.p]; if(p) speak('',p.br); break; }
+    case 'drill-s': drill(el.dataset.say,3,el.dataset.fr,!!el.dataset.lit); break;
+    case 'once-s':  speak(el.dataset.say,el.dataset.fr,!!el.dataset.lit); break;
+    case 'add-open': addDialog(); break;
+    case 'add-save': addSave(); break;
+    case 'close': closeSheet(); break;
+    case 'speak-src': speak($('#o-ur').textContent,$('#src').value); break;
+    case 'copy-src': navigator.clipboard.writeText($('#o-ur').textContent); snack('Brahui script copied.'); break;
+    case 'save-src': addDialog('', $('#src').value.trim().split(/\s+/)[0]||''); break;
+    case 'speak-rev': speak('',lineFromUrdu($('#rsrc').value).latin.replace(/ₐ/g,'a')); break;
+    case 'rev-to-src':
+      $('#src').value=lineFromUrdu($('#rsrc').value).latin.replace(/ₐ/g,'a'); convert();
+      $('#src').scrollIntoView({behavior:'smooth',block:'center'}); break;
+    case 'save-rev': addDialog($('#rsrc').value.trim(),''); break;
+    case 'export-json': exportJSON(); break;
+    case 'export-tsv': exportTSV(); break;
+    case 'reset':
+      openDialog(`<h2>Reset the dictionary?</h2>
+        <p>Everything you added in this browser is deleted. The ${SEED.length} sourced entries stay.</p>
+        <div class="dialog-actions">
+          <button class="btn text" data-act="close">Cancel</button>
+          <button class="btn" data-act="reset-yes">Reset</button>
+        </div>`);
+      break;
+    case 'reset-yes':
+      EXTRA=[]; await saveExtra(); rebuild(); closeSheet(); snack('Back to the seeded lexicon.'); break;
+    case 'bulk-add': bulkAdd(); break;
+    case 'rescan': {
+      /* Chrome caches getVoices() for the life of the process and Edge fetches
+         its online voices over the network, so poll for a few seconds. */
+      let n=0;
+      const t=setInterval(()=>{
+        loadVoices(true);
+        if(voices.length||++n>10){
+          clearInterval(t); saveSettings(); settingsSheet();
+          snack(voices.length+' voice'+(voices.length===1?'':'s')+' found'+
+                (voices.some(v=>/^ur|urdu/i.test(v.lang+v.name))?' — including Urdu.':', no Urdu among them.'));
+        }
+      },300);
+      break;
+    }
+    case 'test-voice': speak('یِہ اُردُو آواز کا اِمتِحان ہے'); break;
+    case 'ph-test':
+      snack('Listen for four distinct sounds: tá — ŧá — tí — ti. All alike means the retroflexes are being flattened.');
+      speak('','tá ŧá tí ti'); break;
+    case 'lh-test':
+      snack('meļ vs mel. If they sound identical the voice has no /ɬ/ — a limit of the voice, not of the spelling.');
+      speak('','meļ mel meļ mel'); break;
+  }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+
+/* ============================================================
+   14. GO
+   ============================================================ */
+(async function init(){
+  await loadAll();
+  renderPhrases(); renderSounds(); renderSources(); convert(); reverse(); nav('words');
+  if(DESK()) sheetPlaceholder();
+  /* crossing the desktop breakpoint changes the sheet from an overlay to a pane */
+  matchMedia('(min-width:1100px)').addEventListener('change',e=>{
+    if(e.matches && !SELID) sheetPlaceholder();
+    if(!e.matches && !SELID) $('#sheet').classList.remove('on');
+    renderWords();
+  });
+})();
+</script>
+</body>
+</html>
